@@ -27,3 +27,16 @@ def test_exact_match_fails():
 
     assert result.score == 0.0
     assert result.passed is False
+
+def test_exact_match_uses_normalization():
+
+    evaluator = ExactMatchEvaluator()
+
+    result = evaluator.evaluate(
+        case_id="003",
+        expected="Paris",
+        actual=" PARIS. ",
+    )
+
+    assert result.score == 1.0
+    assert result.passed is True

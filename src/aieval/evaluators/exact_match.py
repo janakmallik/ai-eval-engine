@@ -1,3 +1,4 @@
+from aieval.normalizers import normalize_text
 from aieval.result import EvaluationResult
 
 
@@ -10,7 +11,10 @@ class ExactMatchEvaluator:
         actual: str,
     ) -> EvaluationResult:
 
-        score = float(expected == actual)
+        normalized_expected = normalize_text(expected)
+        normalized_actual = normalize_text(actual)
+
+        score = float(normalized_expected == normalized_actual)
 
         return EvaluationResult(
             case_id=case_id,
