@@ -1,7 +1,7 @@
 from collections.abc import Callable, Iterable
 
 from aieval.dataset import EvalCase
-from aieval.evaluators.exact_match import ExactMatchEvaluator
+from aieval.evaluators.base import Evaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 
@@ -9,7 +9,7 @@ from aieval.run import EvaluationRun
 def evaluate_dataset(
     model: Callable[[str], str],
     dataset: Iterable[EvalCase],
-    evaluator: ExactMatchEvaluator,
+    evaluator: Evaluator,
 ) -> EvaluationRun:
 
     results: list[EvaluationResult] = []

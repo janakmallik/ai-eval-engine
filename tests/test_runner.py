@@ -80,3 +80,27 @@ def test_runner_with_contains_evaluator():
     assert run.passed == 2
     assert run.failed == 0
     assert run.score == 1.0
+
+def test_runner_accepts_different_evaluator():
+
+    dataset = [
+        EvalCase(
+            id="001",
+            input="What is the capital of France?",
+            expected="Paris",
+        ),
+    ]
+
+    def fake_model(question: str) -> str:
+        return "Paris is the capital of France."
+
+    run = evaluate_dataset(
+        model=fake_model,
+        dataset=dataset,
+        evaluator=ContainsEvaluator(),
+    )
+
+    assert run.total == 1
+    assert run.passed == 1
+    assert run.failed == 0
+    assert run.score == 1.0
