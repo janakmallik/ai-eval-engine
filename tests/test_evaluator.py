@@ -1,4 +1,5 @@
 from aieval.evaluators.exact_match import ExactMatchEvaluator
+from aieval.evaluators.similarity import SimilarityEvaluator
 
 
 def test_exact_match_passes():
@@ -58,3 +59,31 @@ def test_exact_match_supports_custom_normalizer():
 
     assert result.score == 1.0
     assert result.passed is True
+
+
+def test_similarity_evaluator():
+
+    evaluator = SimilarityEvaluator(threshold=0.8, )
+
+    result = evaluator.evaluate(
+        case_id="005",
+        expected="Paris is the capital of France.",
+        actual="Paris is the capital city of France.",
+    )
+
+    assert result.score > 0.8
+    assert result.passed is True
+
+
+def test_similarity_evaluator_rejects_dissimilar_text():
+
+    evaluator = SimilarityEvaluator(threshold=0.8, )
+
+    result = evaluator.evaluate(
+        case_id="006",
+        expected="Paris is the capital of France.",
+        actual="Bananas are yellow.",
+    )
+
+    assert result.score < 0.8
+    assert result.passed is False
