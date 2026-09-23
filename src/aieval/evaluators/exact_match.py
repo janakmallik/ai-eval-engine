@@ -1,8 +1,16 @@
+from collections.abc import Callable
+
 from aieval.normalizers import normalize_text
 from aieval.result import EvaluationResult
 
 
 class ExactMatchEvaluator:
+
+    def __init__(
+        self,
+        normalizer: Callable[[str], str] = normalize_text,
+    ):
+        self.normalizer = normalizer
 
     def evaluate(
         self,
@@ -11,8 +19,8 @@ class ExactMatchEvaluator:
         actual: str,
     ) -> EvaluationResult:
 
-        normalized_expected = normalize_text(expected)
-        normalized_actual = normalize_text(actual)
+        normalized_expected = self.normalizer(expected)
+        normalized_actual = self.normalizer(actual)
 
         score = float(normalized_expected == normalized_actual)
 

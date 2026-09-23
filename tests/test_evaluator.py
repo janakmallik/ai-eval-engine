@@ -28,6 +28,7 @@ def test_exact_match_fails():
     assert result.score == 0.0
     assert result.passed is False
 
+
 def test_exact_match_uses_normalization():
 
     evaluator = ExactMatchEvaluator()
@@ -36,6 +37,23 @@ def test_exact_match_uses_normalization():
         case_id="003",
         expected="Paris",
         actual=" PARIS. ",
+    )
+
+    assert result.score == 1.0
+    assert result.passed is True
+
+
+def test_exact_match_supports_custom_normalizer():
+
+    def remove_prefix(text: str) -> str:
+        return text.removeprefix("Answer: ").strip()
+
+    evaluator = ExactMatchEvaluator(normalizer=remove_prefix, )
+
+    result = evaluator.evaluate(
+        case_id="004",
+        expected="4",
+        actual="Answer: 4",
     )
 
     assert result.score == 1.0
