@@ -1,7 +1,7 @@
 from collections.abc import Callable, Iterable
 
 from aieval.dataset import EvalCase
-from aieval.evaluator import ExactMatchEvaluator
+from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 

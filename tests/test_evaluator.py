@@ -1,4 +1,4 @@
-from aieval.evaluator import ExactMatchEvaluator
+from aieval.evaluators.exact_match import ExactMatchEvaluator
 
 
 def test_exact_match_passes():

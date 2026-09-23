@@ -1,5 +1,5 @@
 from aieval.dataset import EvalCase
-from aieval.evaluator import ExactMatchEvaluator
+from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.runner import evaluate_dataset
 
 dataset = [
