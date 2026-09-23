@@ -37,5 +37,16 @@ results = evaluate_dataset(
     evaluator=ExactMatchEvaluator(),
 )
 
-for result in results:
+print("Evaluation Summary")
+print("-------------------")
+print(f"Total:    {results.total}")
+print(f"Passed:   {results.passed}")
+print(f"Failed:   {results.failed}")
+print(f"Score:    {results.score:.2%}")
+
+print()
+print("Individual Results")
+print("------------------")
+
+for result in results.results:
     print(result)

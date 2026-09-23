@@ -3,15 +3,16 @@ from collections.abc import Callable, Iterable
 from aieval.dataset import EvalCase
 from aieval.evaluator import ExactMatchEvaluator
 from aieval.result import EvaluationResult
+from aieval.run import EvaluationRun
 
 
 def evaluate_dataset(
     model: Callable[[str], str],
     dataset: Iterable[EvalCase],
     evaluator: ExactMatchEvaluator,
-) -> list[EvaluationResult]:
+) -> EvaluationRun:
 
-    results = []
+    results: list[EvaluationResult] = []
 
     for case in dataset:
         actual = model(case.input)
@@ -24,4 +25,4 @@ def evaluate_dataset(
 
         results.append(result)
 
-    return results
+    return EvaluationRun(results)

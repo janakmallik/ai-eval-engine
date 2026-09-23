@@ -32,10 +32,13 @@ def test_evaluate_dataset():
         evaluator=ExactMatchEvaluator(),
     )
 
-    assert len(results) == 2
+    assert results.total == 2
+    assert results.passed == 2
+    assert results.failed == 0
+    assert results.score == 1.0
 
-    assert results[0].score == 1.0
-    assert results[0].passed is True
+    assert results.results[0].score == 1.0
+    assert results.results[0].passed is True
 
-    assert results[1].score == 1.0
-    assert results[1].passed is True
+    assert results.results[1].score == 1.0
+    assert results.results[1].passed is True
