@@ -1,5 +1,6 @@
 from collections.abc import Callable
 
+from aieval.context import EvaluationContext
 from aieval.normalizers import normalize_text
 from aieval.result import EvaluationResult
 
@@ -14,20 +15,19 @@ class ExactMatchEvaluator:
 
     def evaluate(
         self,
-        case_id: str,
-        expected: str,
-        actual: str,
+        context: EvaluationContext,
     ) -> EvaluationResult:
 
-        normalized_expected = self.normalizer(expected)
-        normalized_actual = self.normalizer(actual)
+        normalized_expected = self.normalizer(context.case.expected)
+
+        normalized_actual = self.normalizer(context.actual)
 
         score = float(normalized_expected == normalized_actual)
 
         return EvaluationResult(
-            case_id=case_id,
-            expected=expected,
-            actual=actual,
+            case_id=context.case.id,
+            expected=context.case.expected,
+            actual=context.actual,
             score=score,
             passed=score == 1.0,
         )

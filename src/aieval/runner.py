@@ -1,5 +1,6 @@
 from collections.abc import Callable, Iterable
 
+from aieval.context import EvaluationContext
 from aieval.dataset import EvalCase
 from aieval.evaluators.base import Evaluator
 from aieval.result import EvaluationResult
@@ -17,11 +18,12 @@ def evaluate_dataset(
     for case in dataset:
         actual = model(case.input)
 
-        result = evaluator.evaluate(
-            case_id=case.id,
-            expected=case.expected,
+        context = EvaluationContext(
+            case=case,
             actual=actual,
         )
+
+        result = evaluator.evaluate(context)
 
         results.append(result)
 
