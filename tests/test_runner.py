@@ -62,10 +62,8 @@ def test_runner_with_contains_evaluator():
 
     def fake_model(question: str) -> str:
         answers = {
-            "What is the capital of France?":
-                "Paris is the capital of France.",
-            "Tell me about Paris.":
-                "Paris is a city in France.",
+            "What is the capital of France?": "Paris is the capital of France.",
+            "Tell me about Paris.": "Paris is a city in France.",
         }
 
         return answers[question]
@@ -80,6 +78,7 @@ def test_runner_with_contains_evaluator():
     assert run.passed == 2
     assert run.failed == 0
     assert run.score == 1.0
+
 
 def test_runner_accepts_different_evaluator():
 

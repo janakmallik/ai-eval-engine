@@ -9,5 +9,4 @@ class Evaluator(Protocol):
     def evaluate(
         self,
         context: EvaluationContext,
-    ) -> EvaluationResult:
-        ...
+    ) -> EvaluationResult: ...

@@ -1,7 +1,0 @@
-README.md
-pyproject.toml
-src/ai_eval_engine.egg-info/PKG-INFO
-src/ai_eval_engine.egg-info/SOURCES.txt
-src/ai_eval_engine.egg-info/dependency_links.txt
-src/ai_eval_engine.egg-info/top_level.txt
-src/aieval/__init__.py
