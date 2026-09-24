@@ -21,6 +21,7 @@ def test_evaluation_context():
     assert context.case.expected == "4"
     assert context.actual == "4"
 
+
 def test_evaluation_context_supports_metadata():
 
     case = EvalCase(
@@ -41,6 +42,7 @@ def test_evaluation_context_supports_metadata():
     assert context.metadata["model"] == "test-model"
     assert context.metadata["latency_ms"] == 120
 
+
 def test_evaluation_context_metadata_defaults_to_empty_dict():
 
     case = EvalCase(
@@ -55,6 +57,7 @@ def test_evaluation_context_metadata_defaults_to_empty_dict():
     )
 
     assert context.metadata == {}
+
 
 def test_evaluation_context_is_immutable():
 

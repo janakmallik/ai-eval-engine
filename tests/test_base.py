@@ -2,7 +2,7 @@ from aieval.context import EvaluationContext
 from aieval.dataset import EvalCase
 from aieval.evaluators.base import Evaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
-
+from aieval.evaluators.length import LengthEvaluator
 
 def test_exact_match_is_an_evaluator():
 
@@ -15,6 +15,23 @@ def test_exact_match_is_an_evaluator():
             expected="4",
         ),
         actual="4",
+    )
+
+    result = evaluator.evaluate(context)
+
+    assert result.passed is True
+
+def test_length_is_an_evaluator():
+
+    evaluator: Evaluator = LengthEvaluator(max_length=100)
+
+    context = EvaluationContext(
+        case=EvalCase(
+            id="010",
+            input="Say hello.",
+            expected="Hello",
+        ),
+        actual="Hello",
     )
 
     result = evaluator.evaluate(context)
