@@ -1,9 +1,10 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from aieval.dataset import EvalCase
 
 
-@dataclass
+@dataclass(frozen=True)
 class EvaluationContext:
     case: EvalCase
     actual: str
+    metadata: dict[str, object] = field(default_factory=dict)
