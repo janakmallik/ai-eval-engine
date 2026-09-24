@@ -4,6 +4,7 @@ from aieval.evaluators.base import Evaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.evaluators.length import LengthEvaluator
 
+
 def test_exact_match_is_an_evaluator():
 
     evaluator: Evaluator = ExactMatchEvaluator()
@@ -20,6 +21,7 @@ def test_exact_match_is_an_evaluator():
     result = evaluator.evaluate(context)
 
     assert result.passed is True
+
 
 def test_length_is_an_evaluator():
 
