@@ -37,3 +37,28 @@ def test_evaluation_run():
     assert run.passed == 2
     assert run.failed == 1
     assert run.score == 2 / 3
+
+def test_evaluation_run_pass_rate():
+
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="002",
+            evaluator_name="exact_match",
+            expected="5",
+            actual="6",
+            score=0.0,
+            passed=False,
+        ),
+    ]
+
+    run = EvaluationRun(results)
+
+    assert run.pass_rate == 0.5

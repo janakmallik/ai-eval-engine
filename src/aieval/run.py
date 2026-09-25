@@ -25,3 +25,10 @@ class EvaluationRun:
             return 0.0
 
         return sum(result.score for result in self.results) / self.total
+
+    @property
+    def pass_rate(self) -> float:
+        if self.total == 0:
+            return 0.0
+
+        return self.passed / self.total
