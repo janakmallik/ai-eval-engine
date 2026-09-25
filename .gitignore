@@ -1,9 +1,10 @@
 *.egg-info/
+*.py[cod]
 *.pyc
+.coverage
+.pytest_cache/
 .venv/
 __pycache__/
-*.py[cod]
-.pytest_cache/
-.coverage
-htmlcov/project_roadmap.md
 additional_help_texts.txt
+htmlcov/project_roadmap.md
+project_roadmap.md
