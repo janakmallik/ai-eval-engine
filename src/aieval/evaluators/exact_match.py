@@ -26,6 +26,7 @@ class ExactMatchEvaluator:
 
         return EvaluationResult(
             case_id=context.case.id,
+            evaluator_name="exact_match",
             expected=context.case.expected,
             actual=context.actual,
             score=score,

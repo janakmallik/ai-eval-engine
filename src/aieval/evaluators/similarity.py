@@ -32,6 +32,7 @@ class SimilarityEvaluator:
 
         return EvaluationResult(
             case_id=context.case.id,
+            evaluator_name="similarity",
             expected=context.case.expected,
             actual=context.actual,
             score=score,

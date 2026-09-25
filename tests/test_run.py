@@ -7,6 +7,7 @@ def test_evaluation_run():
     results = [
         EvaluationResult(
             case_id="001",
+            evaluator_name="exact_match",
             expected="4",
             actual="4",
             score=1.0,
@@ -14,6 +15,7 @@ def test_evaluation_run():
         ),
         EvaluationResult(
             case_id="002",
+            evaluator_name="exact_match",
             expected="Paris",
             actual="Paris",
             score=1.0,
@@ -21,6 +23,7 @@ def test_evaluation_run():
         ),
         EvaluationResult(
             case_id="003",
+            evaluator_name="exact_match",
             expected="5",
             actual="6",
             score=0.0,

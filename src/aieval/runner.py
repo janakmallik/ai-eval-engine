@@ -10,7 +10,7 @@ from aieval.run import EvaluationRun
 def evaluate_dataset(
     model: Callable[[str], str],
     dataset: Iterable[EvalCase],
-    evaluator: Evaluator,
+    evaluators: Iterable[Evaluator],
 ) -> EvaluationRun:
 
     results: list[EvaluationResult] = []
@@ -23,8 +23,8 @@ def evaluate_dataset(
             actual=actual,
         )
 
-        result = evaluator.evaluate(context)
-
-        results.append(result)
+        for evaluator in evaluators:
+            result = evaluator.evaluate(context)
+            results.append(result)
 
     return EvaluationRun(results)

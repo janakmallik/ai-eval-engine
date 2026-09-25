@@ -24,6 +24,7 @@ class LengthEvaluator(Evaluator):
 
         return EvaluationResult(
             case_id=context.case.id,
+            evaluator_name="length",
             expected=str(self.max_length),
             actual=str(actual_length),
             score=score,

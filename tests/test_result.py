@@ -4,6 +4,7 @@ from aieval.result import EvaluationResult
 def test_evaluation_result():
     result = EvaluationResult(
         case_id="001",
+        evaluator_name="exact_match",
         expected="4",
         actual="4",
         score=1.0,

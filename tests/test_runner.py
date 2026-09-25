@@ -2,7 +2,7 @@ from aieval.dataset import EvalCase
 from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.runner import evaluate_dataset
-
+from aieval.evaluators.length import LengthEvaluator
 
 def test_evaluate_dataset():
 
@@ -30,7 +30,7 @@ def test_evaluate_dataset():
     results = evaluate_dataset(
         model=fake_model,
         dataset=dataset,
-        evaluator=ExactMatchEvaluator(),
+        evaluators=[ExactMatchEvaluator()],
     )
 
     assert results.total == 2
@@ -71,7 +71,7 @@ def test_runner_with_contains_evaluator():
     run = evaluate_dataset(
         model=fake_model,
         dataset=dataset,
-        evaluator=ContainsEvaluator(),
+        evaluators=[ContainsEvaluator()],
     )
 
     assert run.total == 2
@@ -96,10 +96,36 @@ def test_runner_accepts_different_evaluator():
     run = evaluate_dataset(
         model=fake_model,
         dataset=dataset,
-        evaluator=ContainsEvaluator(),
+        evaluators=[ContainsEvaluator()],
     )
 
     assert run.total == 1
     assert run.passed == 1
     assert run.failed == 0
     assert run.score == 1.0
+
+def test_runner_accepts_multiple_evaluators():
+
+    dataset = [
+        EvalCase(
+            id="011",
+            input="What is the capital of France?",
+            expected="Paris",
+        ),
+    ]
+
+    def fake_model(question: str) -> str:
+        return "Paris is the capital of France."
+
+    run = evaluate_dataset(
+        model=fake_model,
+        dataset=dataset,
+        evaluators=[
+            ContainsEvaluator(),
+            LengthEvaluator(max_length=100),
+        ],
+    )
+
+    assert run.total == 2
+    assert run.passed == 2
+    assert run.failed == 0
