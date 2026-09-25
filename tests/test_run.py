@@ -38,6 +38,7 @@ def test_evaluation_run():
     assert run.failed == 1
     assert run.score == 2 / 3
 
+
 def test_evaluation_run_pass_rate():
 
     results = [
@@ -62,3 +63,41 @@ def test_evaluation_run_pass_rate():
     run = EvaluationRun(results)
 
     assert run.pass_rate == 0.5
+
+
+def test_evaluation_run_filters_by_evaluator():
+
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="length",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="002",
+            evaluator_name="exact_match",
+            expected="5",
+            actual="6",
+            score=0.0,
+            passed=False,
+        ),
+    ]
+
+    run = EvaluationRun(results)
+
+    exact_match_results = run.by_evaluator("exact_match")
+
+    assert len(exact_match_results) == 2
+    assert all(result.evaluator_name == "exact_match"
+               for result in exact_match_results)
