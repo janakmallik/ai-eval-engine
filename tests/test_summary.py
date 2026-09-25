@@ -1,6 +1,6 @@
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-
+from aieval.summary import EvaluationSummary
 
 def test_evaluation_run_summary():
     results = [
@@ -71,3 +71,23 @@ def test_evaluation_run_summary_ignores_other_evaluators():
     assert summary.failed == 0
     assert summary.score == 1.0
     assert summary.pass_rate == 1.0
+
+def test_evaluation_summary_to_dict():
+
+    summary = EvaluationSummary(
+        evaluator_name="exact_match",
+        total=2,
+        passed=1,
+        failed=1,
+        score=0.5,
+        pass_rate=0.5,
+    )
+
+    assert summary.to_dict() == {
+        "evaluator_name": "exact_match",
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "score": 0.5,
+        "pass_rate": 0.5,
+    }

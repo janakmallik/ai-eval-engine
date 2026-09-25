@@ -70,3 +70,16 @@ class EvaluationRun:
             evaluator_name: self.summary(evaluator_name)
             for evaluator_name in evaluator_names
         }
+
+    def to_dict(self) -> dict:
+        return {
+            "total": self.total,
+            "passed": self.passed,
+            "failed": self.failed,
+            "score": self.score,
+            "pass_rate": self.pass_rate,
+            "summaries": {
+                evaluator_name: summary.to_dict()
+                for evaluator_name, summary in self.summaries().items()
+            },
+        }
