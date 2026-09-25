@@ -101,3 +101,47 @@ def test_evaluation_run_filters_by_evaluator():
     assert len(exact_match_results) == 2
     assert all(result.evaluator_name == "exact_match"
                for result in exact_match_results)
+
+
+def test_evaluation_run_summaries():
+
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="002",
+            evaluator_name="exact_match",
+            expected="5",
+            actual="6",
+            score=0.0,
+            passed=False,
+        ),
+        EvaluationResult(
+            case_id="003",
+            evaluator_name="contains",
+            expected="Paris",
+            actual="Paris is a city.",
+            score=1.0,
+            passed=True,
+        ),
+    ]
+
+    run = EvaluationRun(results)
+
+    summaries = run.summaries()
+
+    assert set(summaries) == {"exact_match", "contains"}
+
+    assert summaries["exact_match"].total == 2
+    assert summaries["exact_match"].passed == 1
+    assert summaries["exact_match"].failed == 1
+
+    assert summaries["contains"].total == 1
+    assert summaries["contains"].passed == 1
+    assert summaries["contains"].failed == 0

@@ -62,3 +62,11 @@ class EvaluationRun:
             score=score,
             pass_rate=pass_rate,
         )
+
+    def summaries(self) -> dict[str, EvaluationSummary]:
+        evaluator_names = {result.evaluator_name for result in self.results}
+
+        return {
+            evaluator_name: self.summary(evaluator_name)
+            for evaluator_name in evaluator_names
+        }
