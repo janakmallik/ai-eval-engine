@@ -187,3 +187,101 @@ def test_evaluation_run_to_dict():
             }
         },
     }
+
+def test_evaluation_run_to_dict():
+
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="002",
+            evaluator_name="exact_match",
+            expected="5",
+            actual="6",
+            score=0.0,
+            passed=False,
+        ),
+    ]
+
+    run = EvaluationRun(results)
+
+    assert run.to_dict() == {
+        "results": [
+            {
+                "case_id": "001",
+                "evaluator_name": "exact_match",
+                "expected": "4",
+                "actual": "4",
+                "score": 1.0,
+                "passed": True,
+            },
+            {
+                "case_id": "002",
+                "evaluator_name": "exact_match",
+                "expected": "5",
+                "actual": "6",
+                "score": 0.0,
+                "passed": False,
+            },
+        ],
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "score": 0.5,
+        "pass_rate": 0.5,
+    }
+
+def test_evaluation_run_to_dict():
+
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        ),
+        EvaluationResult(
+            case_id="002",
+            evaluator_name="exact_match",
+            expected="5",
+            actual="6",
+            score=0.0,
+            passed=False,
+        ),
+    ]
+
+    run = EvaluationRun(results)
+
+    assert run.to_dict() == {
+        "results": [
+            {
+                "case_id": "001",
+                "evaluator_name": "exact_match",
+                "expected": "4",
+                "actual": "4",
+                "score": 1.0,
+                "passed": True,
+            },
+            {
+                "case_id": "002",
+                "evaluator_name": "exact_match",
+                "expected": "5",
+                "actual": "6",
+                "score": 0.0,
+                "passed": False,
+            },
+        ],
+        "total": 2,
+        "passed": 1,
+        "failed": 1,
+        "score": 0.5,
+        "pass_rate": 0.5,
+    }

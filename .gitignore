@@ -5,4 +5,5 @@ __pycache__/
 *.py[cod]
 .pytest_cache/
 .coverage
-htmlcov/
+htmlcov/project_roadmap.md
+additional_help_texts.txt
