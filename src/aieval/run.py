@@ -36,7 +36,8 @@ class EvaluationRun:
 
     def by_evaluator(self, evaluator_name: str) -> list[EvaluationResult]:
         return [
-            result for result in self.results
+            result
+            for result in self.results
             if result.evaluator_name == evaluator_name
         ]
 
@@ -69,29 +70,6 @@ class EvaluationRun:
         return {
             evaluator_name: self.summary(evaluator_name)
             for evaluator_name in evaluator_names
-        }
-
-    def to_dict(self) -> dict:
-        return {
-            "total": self.total,
-            "passed": self.passed,
-            "failed": self.failed,
-            "score": self.score,
-            "pass_rate": self.pass_rate,
-            "summaries": {
-                evaluator_name: summary.to_dict()
-                for evaluator_name, summary in self.summaries().items()
-            },
-        }
-
-    def to_dict(self) -> dict:
-        return {
-            "results": [result.to_dict() for result in self.results],
-            "total": self.total,
-            "passed": self.passed,
-            "failed": self.failed,
-            "score": self.score,
-            "pass_rate": self.pass_rate,
         }
 
     def to_dict(self) -> dict:
