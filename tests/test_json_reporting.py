@@ -58,6 +58,7 @@ def test_json_reporter_renders_evaluation_run():
         },
     ]
 
+
 def test_json_reporter_writes_file(tmp_path):
     results = [
         EvaluationResult(
@@ -95,4 +96,14 @@ def test_json_reporter_writes_file(tmp_path):
         "failed": 0,
         "score": 1.0,
         "pass_rate": 1.0,
+        "summaries": {
+            "exact_match": {
+                "evaluator_name": "exact_match",
+                "total": 1,
+                "passed": 1,
+                "failed": 0,
+                "score": 1.0,
+                "pass_rate": 1.0,
+            }
+        },
     }

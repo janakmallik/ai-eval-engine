@@ -196,4 +196,14 @@ def test_evaluation_run_to_dict():
         "failed": 1,
         "score": 0.5,
         "pass_rate": 0.5,
+        "summaries": {
+            "exact_match": {
+                "evaluator_name": "exact_match",
+                "total": 2,
+                "passed": 1,
+                "failed": 1,
+                "score": 0.5,
+                "pass_rate": 0.5,
+            }
+        },
     }

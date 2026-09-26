@@ -80,4 +80,8 @@ class EvaluationRun:
             "failed": self.failed,
             "score": self.score,
             "pass_rate": self.pass_rate,
+            "summaries": {
+                evaluator_name: summary.to_dict()
+                for evaluator_name, summary in self.summaries().items()
+            },
         }
