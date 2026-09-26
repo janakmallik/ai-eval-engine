@@ -57,3 +57,42 @@ def test_json_reporter_renders_evaluation_run():
             "passed": False,
         },
     ]
+
+def test_json_reporter_writes_file(tmp_path):
+    results = [
+        EvaluationResult(
+            case_id="001",
+            evaluator_name="exact_match",
+            expected="4",
+            actual="4",
+            score=1.0,
+            passed=True,
+        )
+    ]
+
+    run = EvaluationRun(results)
+
+    output_path = tmp_path / "evaluation_report.json"
+
+    reporter = JsonReporter()
+    reporter.write(run, output_path)
+
+    assert output_path.exists()
+
+    assert json.loads(output_path.read_text()) == {
+        "results": [
+            {
+                "case_id": "001",
+                "evaluator_name": "exact_match",
+                "expected": "4",
+                "actual": "4",
+                "score": 1.0,
+                "passed": True,
+            }
+        ],
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "score": 1.0,
+        "pass_rate": 1.0,
+    }
