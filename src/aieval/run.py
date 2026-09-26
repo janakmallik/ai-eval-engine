@@ -2,11 +2,12 @@ from dataclasses import dataclass
 
 from aieval.result import EvaluationResult
 from aieval.summary import EvaluationSummary
-
+from dataclasses import dataclass, field
 
 @dataclass
 class EvaluationRun:
     results: list[EvaluationResult]
+    metadata: dict[str, object] = field(default_factory=dict)
 
     @property
     def total(self) -> int:
