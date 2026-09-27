@@ -1,6 +1,6 @@
 from aieval.comparison import ComparisonResult
+from aieval.gate import GateResult, RegressionGate
 from aieval.regression import RegressionDetector
-from aieval.gate import RegressionGate
 
 
 def test_regression_gate_passes_when_no_regression():
@@ -21,8 +21,11 @@ def test_regression_gate_passes_when_no_regression():
     result = detector.check(comparison)
 
     gate = RegressionGate()
+    gate_result = gate.check(result)
 
-    assert gate.passed(result) is True
+    assert isinstance(gate_result, GateResult)
+    assert gate_result.passed is True
+    assert gate_result.status == "passed"
 
 
 def test_regression_gate_fails_when_regression_detected():
@@ -43,5 +46,9 @@ def test_regression_gate_fails_when_regression_detected():
     result = detector.check(comparison)
 
     gate = RegressionGate()
+    gate_result = gate.check(result)
 
-    assert gate.passed(result) is False
+    assert isinstance(gate_result, GateResult)
+    assert gate_result.passed is False
+    assert gate_result.status == "failed"
+    assert "regression" in gate_result.reason.lower()
