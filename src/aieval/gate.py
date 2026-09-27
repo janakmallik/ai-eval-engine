@@ -27,3 +27,6 @@ class RegressionGate:
 
     def passed(self, result: RegressionResult) -> bool:
         return self.check(result).passed
+
+    def exit_code(self, gate_result: GateResult) -> int:
+        return 0 if gate_result.passed else 1
