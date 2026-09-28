@@ -1,9 +1,9 @@
 import argparse
 
-from aieval.gate import RegressionGate
-from aieval.regression import RegressionDetector
+from aieval.comparison import ComparisonResult, compare_runs
+from aieval.gate import GateResult, RegressionGate
+from aieval.regression import RegressionDetector, RegressionResult
 from aieval.reporting.json import JsonReporter
-from aieval.comparison import compare_runs
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -65,13 +65,41 @@ def main(args: list[str] | None = None) -> int:
         gate = RegressionGate()
         gate_result = gate.check(regression_result)
 
-        print(gate_result.status)
-        print(gate_result.reason)
+        print(
+            format_regression_report(
+                comparison,
+                regression_result,
+                gate_result,
+            )
+        )
 
         return gate.exit_code(gate_result)
 
     return 0
 
+def format_regression_report(
+    comparison: ComparisonResult,
+    regression_result: RegressionResult,
+    gate_result: GateResult,
+) -> str:
+    lines = [
+        f"Status: {gate_result.status.upper()}",
+        f"Reason: {gate_result.reason}",
+        "",
+        "Overall:",
+        f"  baseline score: {comparison.baseline_score:.3f}",
+        f"  current score:  {comparison.current_score:.3f}",
+        f"  score delta:    {comparison.score_delta:+.3f}",
+        "",
+        "Evaluator deltas:",
+    ]
+
+    for evaluator_name, delta in sorted(
+        comparison.evaluator_deltas.items()
+    ):
+        lines.append(f"  {evaluator_name}: {delta:+.3f}")
+
+    return "\n".join(lines)
 
 if __name__ == "__main__":
     raise SystemExit(main())
