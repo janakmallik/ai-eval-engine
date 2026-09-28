@@ -179,3 +179,42 @@ def test_cli_regression_passes_when_threshold_allows_it(tmp_path):
     )
 
     assert exit_code == 0
+
+def test_cli_accepts_evaluator_thresholds():
+    from aieval.cli import build_parser
+
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "regression",
+            "--baseline",
+            "baseline.json",
+            "--current",
+            "current.json",
+            "--evaluator-threshold",
+            "exact_match=0.01",
+            "--evaluator-threshold",
+            "similarity=0.10",
+        ]
+    )
+
+    assert args.evaluator_threshold == [
+        "exact_match=0.01",
+        "similarity=0.10",
+    ]
+
+def test_parse_evaluator_thresholds():
+    from aieval.cli import parse_evaluator_thresholds
+
+    result = parse_evaluator_thresholds(
+        [
+            "exact_match=0.01",
+            "similarity=0.10",
+        ]
+    )
+
+    assert result == {
+        "exact_match": 0.01,
+        "similarity": 0.10,
+    }

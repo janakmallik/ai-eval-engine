@@ -9,15 +9,24 @@ class RegressionResult:
     score_regression: bool
     evaluator_regressions: list[str]
 
+@dataclass
+class RegressionConfig:
+    threshold: float = 0.0
+    evaluator_thresholds: dict[str, float] | None = None
 
 class RegressionDetector:
     def __init__(
         self,
         threshold: float = 0.0,
         evaluator_thresholds: dict[str, float] | None = None,
+        config: RegressionConfig | None = None,
     ):
-        self.threshold = threshold
-        self.evaluator_thresholds = evaluator_thresholds or {}
+        if config is not None:
+            self.threshold = config.threshold
+            self.evaluator_thresholds = config.evaluator_thresholds or {}
+        else:
+            self.threshold = threshold
+            self.evaluator_thresholds = evaluator_thresholds or {}
 
     def check(self, comparison: ComparisonResult) -> RegressionResult:
         score_regression = comparison.score_delta < -self.threshold

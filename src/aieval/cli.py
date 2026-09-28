@@ -2,7 +2,11 @@ import argparse
 
 from aieval.comparison import ComparisonResult, compare_runs
 from aieval.gate import GateResult, RegressionGate
-from aieval.regression import RegressionDetector, RegressionResult
+from aieval.regression import (
+    RegressionConfig,
+    RegressionDetector,
+    RegressionResult,
+)
 from aieval.reporting.json import JsonReporter
 from aieval.run import EvaluationRun
 
@@ -39,8 +43,25 @@ def build_parser() -> argparse.ArgumentParser:
         help="Maximum allowed regression.",
     )
 
+    regression_parser.add_argument(
+        "--evaluator-threshold",
+        action="append",
+        default=[],
+        help="Evaluator-specific threshold in the form NAME=VALUE.",
+    )
+
     return parser
 
+def parse_evaluator_thresholds(
+    values: list[str],
+) -> dict[str, float]:
+    thresholds: dict[str, float] = {}
+
+    for value in values:
+        name, threshold = value.split("=", 1)
+        thresholds[name] = float(threshold)
+
+    return thresholds
 
 def main(args: list[str] | None = None) -> int:
     parser = build_parser()
@@ -58,9 +79,14 @@ def main(args: list[str] | None = None) -> int:
 
         comparison = compare_runs(baseline, current)
 
-        detector = RegressionDetector(
-            threshold=parsed_args.threshold
+        config = RegressionConfig(
+            threshold=parsed_args.threshold,
+            evaluator_thresholds=parse_evaluator_thresholds(
+                parsed_args.evaluator_threshold
+            ),
         )
+
+        detector = RegressionDetector(config=config)
         regression_result = detector.check(comparison)
 
         gate = RegressionGate()

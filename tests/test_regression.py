@@ -74,3 +74,22 @@ def test_regression_detector_uses_evaluator_specific_thresholds():
     assert result.regressed is True
     assert result.score_regression is False
     assert result.evaluator_regressions == ["exact_match"]
+
+def test_regression_detector_accepts_configuration_object():
+    from aieval.regression import RegressionConfig
+
+    config = RegressionConfig(
+        threshold=0.05,
+        evaluator_thresholds={
+            "exact_match": 0.01,
+            "similarity": 0.10,
+        },
+    )
+
+    detector = RegressionDetector(config=config)
+
+    assert detector.threshold == 0.05
+    assert detector.evaluator_thresholds == {
+        "exact_match": 0.01,
+        "similarity": 0.10,
+    }
