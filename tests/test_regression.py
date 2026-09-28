@@ -46,3 +46,31 @@ def test_regression_detector_allows_small_changes():
     assert result.regressed is False
     assert result.score_regression is False
     assert result.evaluator_regressions == []
+
+def test_regression_detector_uses_evaluator_specific_thresholds():
+    comparison = ComparisonResult(
+        baseline_score=0.90,
+        current_score=0.85,
+        score_delta=-0.05,
+        baseline_pass_rate=0.90,
+        current_pass_rate=0.85,
+        pass_rate_delta=-0.05,
+        evaluator_deltas={
+            "exact_match": -0.03,
+            "similarity": -0.08,
+        },
+    )
+
+    detector = RegressionDetector(
+        threshold=0.05,
+        evaluator_thresholds={
+            "exact_match": 0.01,
+            "similarity": 0.10,
+        },
+    )
+
+    result = detector.check(comparison)
+
+    assert result.regressed is True
+    assert result.score_regression is False
+    assert result.evaluator_regressions == ["exact_match"]
