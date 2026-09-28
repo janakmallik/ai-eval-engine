@@ -69,3 +69,113 @@ def test_format_regression_report():
     assert "baseline model: model_v1" in report
     assert "current model:  model_v2" in report
     assert "dataset:        capitals-v1" in report
+
+def test_cli_regression_returns_failure_exit_code(tmp_path):
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    baseline.write_text(
+        """
+        {
+            "metadata": {},
+            "results": [
+                {
+                    "case_id": "001",
+                    "evaluator_name": "exact_match",
+                    "expected": "Paris",
+                    "actual": "Paris",
+                    "score": 1.0,
+                    "passed": true
+                }
+            ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    current.write_text(
+        """
+        {
+            "metadata": {},
+            "results": [
+                {
+                    "case_id": "001",
+                    "evaluator_name": "exact_match",
+                    "expected": "Paris",
+                    "actual": "London",
+                    "score": 0.0,
+                    "passed": false
+                }
+            ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+        ]
+    )
+
+    assert exit_code == 1
+
+def test_cli_regression_passes_when_threshold_allows_it(tmp_path):
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    baseline.write_text(
+        """
+        {
+            "metadata": {},
+            "results": [
+                {
+                    "case_id": "001",
+                    "evaluator_name": "exact_match",
+                    "expected": "Paris",
+                    "actual": "Paris",
+                    "score": 1.0,
+                    "passed": true
+                }
+            ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    current.write_text(
+        """
+        {
+            "metadata": {},
+            "results": [
+                {
+                    "case_id": "001",
+                    "evaluator_name": "exact_match",
+                    "expected": "Paris",
+                    "actual": "London",
+                    "score": 0.5,
+                    "passed": false
+                }
+            ]
+        }
+        """,
+        encoding="utf-8",
+    )
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+            "--threshold",
+            "0.6",
+        ]
+    )
+
+    assert exit_code == 0
