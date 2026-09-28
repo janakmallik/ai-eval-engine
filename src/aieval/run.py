@@ -76,6 +76,7 @@ class EvaluationRun:
     def to_dict(self) -> dict:
         return {
             "results": [result.to_dict() for result in self.results],
+            "metadata": self.metadata,
             "total": self.total,
             "passed": self.passed,
             "failed": self.failed,

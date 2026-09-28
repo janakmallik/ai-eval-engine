@@ -4,7 +4,6 @@ from aieval.reporting.json import JsonReporter
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 
-
 def test_json_reporter_renders_evaluation_run():
     results = [
         EvaluationResult(
@@ -106,4 +105,29 @@ def test_json_reporter_writes_file(tmp_path):
                 "pass_rate": 1.0,
             }
         },
+        "metadata": {},
     }
+
+def test_json_reporter_reads_evaluation_run(tmp_path):
+    run = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ],
+        metadata={"model": "test-model"},
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "run.json"
+    reporter.write(run, path)
+
+    loaded = reporter.read(path)
+
+    assert loaded == run

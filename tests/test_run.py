@@ -206,4 +206,5 @@ def test_evaluation_run_to_dict():
                 "pass_rate": 0.5,
             }
         },
+        "metadata": {},
     }
