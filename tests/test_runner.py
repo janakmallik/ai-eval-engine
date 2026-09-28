@@ -129,3 +129,51 @@ def test_runner_accepts_multiple_evaluators():
     assert run.total == 2
     assert run.passed == 2
     assert run.failed == 0
+
+def test_runner_attaches_metadata():
+
+    dataset = [
+        EvalCase(
+            id="001",
+            input="What is 2 + 2?",
+            expected="4",
+        ),
+    ]
+
+    def fake_model(question: str) -> str:
+        return "4"
+
+    metadata = {
+        "model": "test-model",
+        "dataset": "math-v1",
+    }
+
+    run = evaluate_dataset(
+        model=fake_model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        metadata=metadata,
+    )
+
+    assert run.metadata == metadata
+
+def test_runner_defaults_to_empty_metadata():
+
+    dataset = [
+        EvalCase(
+            id="001",
+            input="What is 2 + 2?",
+            expected="4",
+        ),
+    ]
+
+    def fake_model(question: str) -> str:
+        return "4"
+
+    run = evaluate_dataset(
+        model=fake_model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    assert run.metadata == {}

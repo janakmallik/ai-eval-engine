@@ -11,6 +11,7 @@ def evaluate_dataset(
     model: Callable[[str], str],
     dataset: Iterable[EvalCase],
     evaluators: Iterable[Evaluator],
+    metadata: dict[str, object] | None = None,
 ) -> EvaluationRun:
 
     results: list[EvaluationResult] = []
@@ -27,4 +28,7 @@ def evaluate_dataset(
             result = evaluator.evaluate(context)
             results.append(result)
 
-    return EvaluationRun(results)
+    return EvaluationRun(
+        results,
+        metadata=metadata or {},
+    )
