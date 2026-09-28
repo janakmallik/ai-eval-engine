@@ -11,5 +11,9 @@ requires-python = ">=3.12"
 dependencies = []
 
 
+[project.scripts]
+aieval = "aieval.cli:main"
+
+
 [tool.setuptools.packages.find]
 where = ["src"]
