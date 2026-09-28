@@ -44,12 +44,20 @@ baseline = evaluate_dataset(
     model=model_v1,
     dataset=dataset,
     evaluators=[evaluator],
+    metadata={
+        "model": "model_v1",
+        "dataset": "capitals-v1",
+    },
 )
 
 current = evaluate_dataset(
     model=model_v2,
     dataset=dataset,
     evaluators=[evaluator],
+    metadata={
+        "model": "model_v2",
+        "dataset": "capitals-v1",
+    },
 )
 
 

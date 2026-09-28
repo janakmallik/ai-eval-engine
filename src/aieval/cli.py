@@ -4,6 +4,7 @@ from aieval.comparison import ComparisonResult, compare_runs
 from aieval.gate import GateResult, RegressionGate
 from aieval.regression import RegressionDetector, RegressionResult
 from aieval.reporting.json import JsonReporter
+from aieval.run import EvaluationRun
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -70,6 +71,8 @@ def main(args: list[str] | None = None) -> int:
                 comparison,
                 regression_result,
                 gate_result,
+                baseline,
+                current,
             )
         )
 
@@ -81,10 +84,17 @@ def format_regression_report(
     comparison: ComparisonResult,
     regression_result: RegressionResult,
     gate_result: GateResult,
+    baseline: EvaluationRun,
+    current: EvaluationRun,
 ) -> str:
     lines = [
         f"Status: {gate_result.status.upper()}",
         f"Reason: {gate_result.reason}",
+        "",
+        "Runs:",
+        f"  baseline model: {baseline.metadata.get('model', 'unknown')}",
+        f"  current model:  {current.metadata.get('model', 'unknown')}",
+        f"  dataset:        {current.metadata.get('dataset', 'unknown')}",
         "",
         "Overall:",
         f"  baseline score: {comparison.baseline_score:.3f}",

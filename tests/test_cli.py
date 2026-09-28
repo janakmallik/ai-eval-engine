@@ -1,5 +1,6 @@
 from aieval.cli import format_regression_report, main
 from aieval.comparison import ComparisonResult
+from aieval.run import EvaluationRun
 from aieval.gate import GateResult
 from aieval.regression import RegressionResult
 
@@ -34,10 +35,28 @@ def test_format_regression_report():
         reason="Regression detected",
     )
 
+    baseline = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model_v1",
+            "dataset": "capitals-v1",
+        },
+    )
+
+    current = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model_v2",
+            "dataset": "capitals-v1",
+        },
+    )
+
     report = format_regression_report(
         comparison,
         regression_result,
         gate_result,
+        baseline,
+        current,
     )
 
     assert "Status: FAILED" in report
@@ -47,3 +66,6 @@ def test_format_regression_report():
     assert "score delta:    -0.500" in report
     assert "exact_match: -0.500" in report
     assert "similarity: +0.100" in report
+    assert "baseline model: model_v1" in report
+    assert "current model:  model_v2" in report
+    assert "dataset:        capitals-v1" in report
