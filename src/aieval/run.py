@@ -1,8 +1,7 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from aieval.result import EvaluationResult
 from aieval.summary import EvaluationSummary
-from dataclasses import dataclass, field
 
 @dataclass
 class EvaluationRun:
