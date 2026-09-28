@@ -91,8 +91,20 @@ def format_regression_report(
         f"  current score:  {comparison.current_score:.3f}",
         f"  score delta:    {comparison.score_delta:+.3f}",
         "",
-        "Evaluator deltas:",
+        "Regression details:",
+        f"  overall score regression: "
+        f"{'YES' if regression_result.score_regression else 'NO'}",
+        "  evaluator regressions:",
     ]
+
+    for evaluator_name in sorted(
+        regression_result.evaluator_regressions
+    ):
+        delta = comparison.evaluator_deltas[evaluator_name]
+        lines.append(f"    - {evaluator_name}: {delta:+.3f}")
+
+    lines.append("")
+    lines.append("Evaluator deltas:")
 
     for evaluator_name, delta in sorted(
         comparison.evaluator_deltas.items()
