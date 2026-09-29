@@ -1,5 +1,5 @@
 from aieval.comparison import ComparisonResult
-from aieval.regression import RegressionDetector
+from aieval.regression import RegressionConfig, RegressionDetector
 
 
 def test_regression_detector_detects_score_regression():
@@ -16,7 +16,9 @@ def test_regression_detector_detects_score_regression():
         },
     )
 
-    detector = RegressionDetector(threshold=0.05)
+    detector = RegressionDetector(
+        config=RegressionConfig(threshold=0.05)
+    )
 
     result = detector.check(comparison)
 
@@ -39,7 +41,9 @@ def test_regression_detector_allows_small_changes():
         },
     )
 
-    detector = RegressionDetector(threshold=0.05)
+    detector = RegressionDetector(
+        config=RegressionConfig(threshold=0.05)
+    )
 
     result = detector.check(comparison)
 
@@ -62,11 +66,13 @@ def test_regression_detector_uses_evaluator_specific_thresholds():
     )
 
     detector = RegressionDetector(
-        threshold=0.05,
-        evaluator_thresholds={
-            "exact_match": 0.01,
-            "similarity": 0.10,
-        },
+        config=RegressionConfig(
+            threshold=0.05,
+            evaluator_thresholds={
+                "exact_match": 0.01,
+                "similarity": 0.10,
+            },
+        )
     )
 
     result = detector.check(comparison)
@@ -88,8 +94,18 @@ def test_regression_detector_accepts_configuration_object():
 
     detector = RegressionDetector(config=config)
 
-    assert detector.threshold == 0.05
-    assert detector.evaluator_thresholds == {
+    assert detector.config.threshold == 0.05
+    assert detector.config.evaluator_thresholds == {
         "exact_match": 0.01,
         "similarity": 0.10,
     }
+
+def test_regression_detector_uses_default_config():
+    from aieval.regression import RegressionConfig
+
+    config = RegressionConfig()
+
+    detector = RegressionDetector(config=config)
+
+    assert detector.config.threshold == 0.0
+    assert detector.config.evaluator_thresholds == {}

@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from aieval.comparison import ComparisonResult
 
@@ -12,30 +12,25 @@ class RegressionResult:
 @dataclass
 class RegressionConfig:
     threshold: float = 0.0
-    evaluator_thresholds: dict[str, float] | None = None
+    evaluator_thresholds: dict[str, float] = field(
+        default_factory=dict
+    )
 
 class RegressionDetector:
-    def __init__(
-        self,
-        threshold: float = 0.0,
-        evaluator_thresholds: dict[str, float] | None = None,
-        config: RegressionConfig | None = None,
-    ):
-        if config is not None:
-            self.threshold = config.threshold
-            self.evaluator_thresholds = config.evaluator_thresholds or {}
-        else:
-            self.threshold = threshold
-            self.evaluator_thresholds = evaluator_thresholds or {}
+    def __init__(self, config: RegressionConfig | None = None):
+        self.config = config or RegressionConfig()
 
     def check(self, comparison: ComparisonResult) -> RegressionResult:
-        score_regression = comparison.score_delta < -self.threshold
+        score_regression = comparison.score_delta < -self.config.threshold
 
         evaluator_regressions = [
             evaluator_name
             for evaluator_name, delta in comparison.evaluator_deltas.items()
             if delta
-            < -self.evaluator_thresholds.get(evaluator_name, self.threshold)
+            < -self.config.evaluator_thresholds.get(
+                evaluator_name,
+                self.config.threshold,
+            )
         ]
 
         return RegressionResult(
