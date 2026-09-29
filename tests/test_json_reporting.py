@@ -32,6 +32,7 @@ def test_json_reporter_renders_evaluation_run():
 
     data = json.loads(output)
 
+    assert data["schema_version"] == 1
     assert data["total"] == 2
     assert data["passed"] == 1
     assert data["failed"] == 1
@@ -80,6 +81,7 @@ def test_json_reporter_writes_file(tmp_path):
     assert output_path.exists()
 
     assert json.loads(output_path.read_text()) == {
+        "schema_version": 1,
         "results": [
             {
                 "case_id": "001",

@@ -74,6 +74,7 @@ class EvaluationRun:
 
     def to_dict(self) -> dict:
         return {
+            "schema_version": 1,
             "results": [result.to_dict() for result in self.results],
             "metadata": self.metadata,
             "total": self.total,

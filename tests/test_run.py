@@ -173,6 +173,7 @@ def test_evaluation_run_to_dict():
     run = EvaluationRun(results)
 
     assert run.to_dict() == {
+        "schema_version": 1,
         "results": [
             {
                 "case_id": "001",
