@@ -132,3 +132,41 @@ def test_eval_dataset_is_iterable():
     cases = list(dataset)
 
     assert cases == dataset.cases
+
+def test_eval_dataset_has_length():
+    dataset = EvalDataset(
+        cases=[
+            EvalCase(
+                id="001",
+                input="What is 2 + 2?",
+                expected="4",
+            ),
+            EvalCase(
+                id="002",
+                input="What is 3 + 3?",
+                expected="6",
+            ),
+        ]
+    )
+
+    assert len(dataset) == 2
+
+
+def test_eval_dataset_supports_indexing():
+    dataset = EvalDataset(
+        cases=[
+            EvalCase(
+                id="001",
+                input="What is 2 + 2?",
+                expected="4",
+            ),
+            EvalCase(
+                id="002",
+                input="What is 3 + 3?",
+                expected="6",
+            ),
+        ]
+    )
+
+    assert dataset[0].id == "001"
+    assert dataset[1].id == "002"

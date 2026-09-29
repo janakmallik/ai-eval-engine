@@ -14,6 +14,12 @@ class EvalCase:
 class EvalDataset:
     cases: list[EvalCase]
 
+    def __len__(self) -> int:
+        return len(self.cases)
+
+    def __getitem__(self, index: int) -> EvalCase:
+        return self.cases[index]
+    
     @classmethod
     def from_json(cls, path: str | Path) -> "EvalDataset":
         input_path = Path(path)
