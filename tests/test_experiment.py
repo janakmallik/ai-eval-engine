@@ -1,7 +1,7 @@
 from aieval.experiment import Experiment
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-
+from aieval.comparison import compare_experiments
 
 def test_experiment_stores_evaluation_context():
     run = EvaluationRun(
@@ -106,3 +106,76 @@ def test_experiment_metadata_defaults_to_independent_dicts():
 
     assert first.metadata == {"model_version": "1.0"}
     assert second.metadata == {}
+
+def test_compare_experiments():
+    baseline_run = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            ),
+        ]
+    )
+
+    current_run = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="London",
+                score=0.0,
+                passed=False,
+            ),
+        ]
+    )
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=baseline_run,
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="model-v2",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=current_run,
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.score_delta == -1.0
+    assert comparison.pass_rate_delta == -1.0
+
+def test_compare_experiments_detects_no_configuration_changes():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.model_changed is False
+    assert comparison.prompt_changed is False
+    assert comparison.dataset_changed is False

@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
+from aieval.experiment import Experiment
 from aieval.run import EvaluationRun
-
 
 @dataclass
 class ComparisonResult:
@@ -14,6 +14,9 @@ class ComparisonResult:
     evaluator_deltas: dict[str, float]
     added_evaluators: set[str] = field(default_factory=set)
     removed_evaluators: set[str] = field(default_factory=set)
+    model_changed: bool = False
+    prompt_changed: bool = False
+    dataset_changed: bool = False
 
 # Step by step:
 # baseline.summaries() — calls a method on baseline that presumably returns some iterable (list, dict, etc.) of "summary" objects.
@@ -55,3 +58,18 @@ def compare_runs(
         added_evaluators=added_evaluators,
         removed_evaluators=removed_evaluators,
     )
+
+def compare_experiments(
+    baseline: Experiment,
+    current: Experiment,
+) -> ComparisonResult:
+    comparison = compare_runs(
+        baseline.run,
+        current.run,
+    )
+
+    comparison.model_changed = baseline.model != current.model
+    comparison.prompt_changed = baseline.prompt != current.prompt
+    comparison.dataset_changed = baseline.dataset != current.dataset
+
+    return comparison
