@@ -1,3 +1,6 @@
+import hashlib
+import json
+
 from dataclasses import dataclass, field
 
 from aieval.result import EvaluationResult
@@ -33,6 +36,21 @@ class EvaluationRun:
             return 0.0
 
         return self.passed / self.total
+
+    @property
+    def run_id(self) -> str:
+        payload = {
+            "results": [result.to_dict() for result in self.results],
+            "metadata": self.metadata,
+        }
+
+        serialized = json.dumps(
+            payload,
+            sort_keys=True,
+            default=str,
+        )
+
+        return hashlib.sha256(serialized.encode("utf-8")).hexdigest()
 
     def by_evaluator(self, evaluator_name: str) -> list[EvaluationResult]:
         return [
@@ -74,6 +92,7 @@ class EvaluationRun:
 
     def to_dict(self) -> dict:
         return {
+            "run_id": self.run_id,
             "schema_version": 1,
             "results": [result.to_dict() for result in self.results],
             "metadata": self.metadata,

@@ -174,6 +174,7 @@ def test_evaluation_run_to_dict():
 
     assert run.to_dict() == {
         "schema_version": 1,
+        "run_id": run.run_id,
         "results": [
             {
                 "case_id": "001",
@@ -209,3 +210,67 @@ def test_evaluation_run_to_dict():
         },
         "metadata": {},
     }
+
+def test_evaluation_run_has_stable_id():
+    run = EvaluationRun(
+        results=[],
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v1",
+        },
+    )
+
+    assert run.run_id
+
+def test_identical_evaluation_runs_have_same_id():
+    results = []
+
+    run1 = EvaluationRun(
+        results=results,
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v1",
+        },
+    )
+
+    run2 = EvaluationRun(
+        results=results,
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v1",
+        },
+    )
+
+    assert run1.run_id == run2.run_id
+
+def test_changed_evaluation_run_has_different_id():
+    run1 = EvaluationRun(
+        results=[],
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v1",
+        },
+    )
+
+    run2 = EvaluationRun(
+        results=[],
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v2",
+        },
+    )
+
+    assert run1.run_id != run2.run_id
+
+def test_evaluation_run_to_dict_includes_run_id():
+    run = EvaluationRun(
+        results=[],
+        metadata={
+            "model_version": "v1",
+            "dataset_version": "v1",
+        },
+    )
+
+    data = run.to_dict()
+
+    assert data["run_id"] == run.run_id

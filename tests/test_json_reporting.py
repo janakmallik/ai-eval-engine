@@ -82,6 +82,7 @@ def test_json_reporter_writes_file(tmp_path):
 
     assert json.loads(output_path.read_text()) == {
         "schema_version": 1,
+        "run_id": run.run_id,
         "results": [
             {
                 "case_id": "001",
