@@ -194,3 +194,32 @@ def test_trace_to_dict_includes_duration():
     data = trace.to_dict()
 
     assert data["duration"] is not None
+
+def test_trace_starts_child_span_from_parent():
+    trace = Trace()
+
+    parent = trace.start_span("request")
+    child = trace.start_span("retrieval", parent=parent)
+
+    assert child.parent_span_id == parent.span_id
+
+
+def test_child_span_keeps_same_trace_id():
+    trace = Trace()
+
+    parent = trace.start_span("request")
+    child = trace.start_span("retrieval", parent=parent)
+
+    assert parent.trace_id == trace.trace_id
+    assert child.trace_id == trace.trace_id
+
+
+def test_trace_supports_nested_span_hierarchy():
+    trace = Trace()
+
+    request = trace.start_span("request")
+    retrieval = trace.start_span("retrieval", parent=request)
+    reranking = trace.start_span("reranking", parent=retrieval)
+
+    assert retrieval.parent_span_id == request.span_id
+    assert reranking.parent_span_id == retrieval.span_id

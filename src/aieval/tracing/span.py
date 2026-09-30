@@ -11,6 +11,7 @@ from uuid import uuid4
 class Span:
     name: str
     span_id: str = field(default_factory=lambda: uuid4().hex)
+    trace_id: str | None = None
     started_at: datetime = field(
         default_factory=lambda: datetime.now(timezone.utc)
     )

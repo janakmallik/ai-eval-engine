@@ -32,10 +32,15 @@ class Trace:
         self,
         name: str,
         parent_span_id: str | None = None,
+        parent: Span | None = None,
     ) -> Span:
+        if parent is not None:
+            parent_span_id = parent.span_id
+
         span = Span(
             name=name,
             parent_span_id=parent_span_id,
+            trace_id=self.trace_id,
         )
 
         self.spans.append(span)
