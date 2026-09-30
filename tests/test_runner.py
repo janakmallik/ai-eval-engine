@@ -1,4 +1,4 @@
-from aieval.dataset import EvalCase
+from aieval.dataset import EvalCase, EvalDataset
 from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.runner import evaluate_dataset
@@ -177,3 +177,39 @@ def test_runner_defaults_to_empty_metadata():
     )
 
     assert run.metadata == {}
+
+def test_runner_accepts_eval_dataset():
+
+    dataset = EvalDataset(
+        cases=[
+            EvalCase(
+                id="001",
+                input="What is 2 + 2?",
+                expected="4",
+            ),
+            EvalCase(
+                id="002",
+                input="What is 3 + 3?",
+                expected="6",
+            ),
+        ]
+    )
+
+    def fake_model(question: str) -> str:
+        answers = {
+            "What is 2 + 2?": "4",
+            "What is 3 + 3?": "6",
+        }
+
+        return answers[question]
+
+    run = evaluate_dataset(
+        model=fake_model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    assert run.total == 2
+    assert run.passed == 2
+    assert run.failed == 0
+    assert run.score == 1.0
