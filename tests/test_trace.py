@@ -52,3 +52,70 @@ def test_trace_ids_are_unique():
     second = Trace()
 
     assert first.trace_id != second.trace_id
+
+from aieval.tracing.span import Span
+
+
+def test_span_has_id():
+    span = Span(name="retrieval")
+
+    assert span.span_id
+    assert isinstance(span.span_id, str)
+
+
+def test_span_stores_name():
+    span = Span(name="retrieval")
+
+    assert span.name == "retrieval"
+
+
+def test_span_has_start_timestamp():
+    span = Span(name="retrieval")
+
+    assert span.started_at is not None
+    assert span.started_at.tzinfo == timezone.utc
+
+
+def test_span_is_not_ended_when_created():
+    span = Span(name="retrieval")
+
+    assert span.ended_at is None
+
+
+def test_span_can_be_ended():
+    span = Span(name="retrieval")
+
+    span.end()
+
+    assert span.ended_at is not None
+    assert span.ended_at.tzinfo == timezone.utc
+
+
+def test_span_duration_is_none_before_end():
+    span = Span(name="retrieval")
+
+    assert span.duration is None
+
+
+def test_span_duration_is_non_negative_after_end():
+    span = Span(name="retrieval")
+
+    span.end()
+
+    assert span.duration is not None
+    assert span.duration >= 0
+
+
+def test_span_can_have_parent():
+    span = Span(
+        name="reranking",
+        parent_span_id="parent-123",
+    )
+
+    assert span.parent_span_id == "parent-123"
+
+
+def test_span_parent_is_optional():
+    span = Span(name="retrieval")
+
+    assert span.parent_span_id is None
