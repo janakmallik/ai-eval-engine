@@ -179,3 +179,58 @@ def test_compare_experiments_detects_no_configuration_changes():
     assert comparison.model_changed is False
     assert comparison.prompt_changed is False
     assert comparison.dataset_changed is False
+
+def test_experiment_accepts_evaluator_configuration():
+    run = EvaluationRun(results=[])
+
+    experiment = Experiment(
+        name="baseline-v1",
+        model="test-model",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "exact_match": {
+                "threshold": 1.0,
+            },
+            "similarity": {
+                "threshold": 0.8,
+            },
+        },
+    )
+
+    assert experiment.evaluator_config["exact_match"]["threshold"] == 1.0
+    assert experiment.evaluator_config["similarity"]["threshold"] == 0.8
+
+def test_compare_experiments_tracks_evaluator_configuration_changes():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "similarity": {
+                "threshold": 0.8,
+            },
+        },
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "similarity": {
+                "threshold": 0.9,
+            },
+        },
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.evaluator_config_changed is True
