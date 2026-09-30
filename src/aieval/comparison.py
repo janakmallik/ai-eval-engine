@@ -18,6 +18,9 @@ class ComparisonResult:
     prompt_changed: bool = False
     dataset_changed: bool = False
     evaluator_config_changed: bool = False
+    model_version_changed: bool = False
+    prompt_version_changed: bool = False
+    dataset_version_changed: bool = False
 
 # Step by step:
 # baseline.summaries() — calls a method on baseline that presumably returns some iterable (list, dict, etc.) of "summary" objects.
@@ -74,6 +77,16 @@ def compare_experiments(
     comparison.dataset_changed = baseline.dataset != current.dataset
     comparison.evaluator_config_changed = (
         baseline.evaluator_config != current.evaluator_config
+    )
+
+    comparison.model_version_changed = (
+        baseline.model_version != current.model_version
+    )
+    comparison.prompt_version_changed = (
+        baseline.prompt_version != current.prompt_version
+    )
+    comparison.dataset_version_changed = (
+        baseline.dataset_version != current.dataset_version
     )
 
     return comparison

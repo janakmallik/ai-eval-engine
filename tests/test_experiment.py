@@ -412,3 +412,80 @@ def test_experiment_to_dict_includes_version_metadata():
     assert data["model_version"] == "v2"
     assert data["prompt_version"] == "prompt-v3"
     assert data["dataset_version"] == "dataset-v5"
+
+def test_compare_experiments_detects_model_version_change():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        model_version="v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="gpt-model",
+        model_version="v2",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.model_version_changed is True
+
+
+def test_compare_experiments_detects_prompt_version_change():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        prompt="Answer the question.",
+        prompt_version="v1",
+        dataset="math-v1",
+        run=run,
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="gpt-model",
+        prompt="Answer the question.",
+        prompt_version="v2",
+        dataset="math-v1",
+        run=run,
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.prompt_version_changed is True
+
+
+def test_compare_experiments_detects_dataset_version_change():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        prompt="Answer the question.",
+        dataset="math",
+        dataset_version="v1",
+        run=run,
+    )
+
+    current = Experiment(
+        name="current-v2",
+        model="gpt-model",
+        prompt="Answer the question.",
+        dataset="math",
+        dataset_version="v2",
+        run=run,
+    )
+
+    comparison = compare_experiments(baseline, current)
+
+    assert comparison.dataset_version_changed is True
