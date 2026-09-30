@@ -103,3 +103,43 @@ def test_compare_runs_by_evaluator():
 
     assert comparison.evaluator_deltas["exact_match"] == -1.0
     assert comparison.evaluator_deltas["similarity"] == 0.0
+
+def test_compare_runs_handles_added_evaluator():
+    baseline = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            ),
+        ]
+    )
+
+    current = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            ),
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="similarity",
+                expected="Paris",
+                actual="Paris",
+                score=0.9,
+                passed=True,
+            ),
+        ]
+    )
+
+    comparison = compare_runs(baseline, current)
+
+    assert comparison.evaluator_deltas["exact_match"] == 0.0
+    assert "similarity" in comparison.added_evaluators

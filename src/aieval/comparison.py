@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from aieval.run import EvaluationRun
 
@@ -12,6 +12,8 @@ class ComparisonResult:
     current_pass_rate: float
     pass_rate_delta: float
     evaluator_deltas: dict[str, float]
+    added_evaluators: set[str] = field(default_factory=set)
+    removed_evaluators: set[str] = field(default_factory=set)
 
 # Step by step:
 # baseline.summaries() — calls a method on baseline that presumably returns some iterable (list, dict, etc.) of "summary" objects.
@@ -24,7 +26,13 @@ def compare_runs(
     baseline: EvaluationRun,
     current: EvaluationRun,
 ) -> ComparisonResult:
-    evaluator_names = set(baseline.summaries()) | set(current.summaries())
+    baseline_evaluators = set(baseline.summaries())
+    current_evaluators = set(current.summaries())
+
+    evaluator_names = baseline_evaluators & current_evaluators
+
+    added_evaluators = current_evaluators - baseline_evaluators
+    removed_evaluators = baseline_evaluators - current_evaluators
 
 # {} creates an empty dictionary.
 # you'll do something like evaluator_deltas[name] = current_score - baseline_score to record the change for each evaluator.
@@ -44,4 +52,6 @@ def compare_runs(
         current_pass_rate=current.pass_rate,
         pass_rate_delta=current.pass_rate - baseline.pass_rate,
         evaluator_deltas=evaluator_deltas,
+        added_evaluators=added_evaluators,
+        removed_evaluators=removed_evaluators,
     )
