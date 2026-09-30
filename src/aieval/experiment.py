@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from aieval.run import EvaluationRun
 
@@ -10,6 +10,7 @@ class Experiment:
     prompt: str
     dataset: str
     run: EvaluationRun
+    metadata: dict[str, object] = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         return {
@@ -18,4 +19,5 @@ class Experiment:
             "prompt": self.prompt,
             "dataset": self.dataset,
             "run": self.run.to_dict(),
+            "metadata": self.metadata,
         }
