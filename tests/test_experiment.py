@@ -234,3 +234,116 @@ def test_compare_experiments_tracks_evaluator_configuration_changes():
     comparison = compare_experiments(baseline, current)
 
     assert comparison.evaluator_config_changed is True
+
+def test_experiment_to_dict_includes_configuration_and_run():
+    run = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="001",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ]
+    )
+
+    experiment = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "exact_match": {
+                "threshold": 1.0,
+            }
+        },
+    )
+
+    data = experiment.to_dict()
+
+    assert data["name"] == "baseline-v1"
+    assert data["model"] == "model-v1"
+    assert data["prompt"] == "Answer the question."
+    assert data["dataset"] == "math-v1"
+    assert data["evaluator_config"]["exact_match"]["threshold"] == 1.0
+    assert data["run"]["total"] == 1
+    assert data["run"]["score"] == 1.0
+
+def test_experiment_has_stable_id():
+    run = EvaluationRun(results=[])
+
+    experiment = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+    )
+
+    assert experiment.experiment_id
+    assert isinstance(experiment.experiment_id, str)
+
+def test_identical_experiments_have_same_id():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "exact_match": {
+                "threshold": 1.0,
+            }
+        },
+    )
+
+    duplicate = Experiment(
+        name="another-name",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "exact_match": {
+                "threshold": 1.0,
+            }
+        },
+    )
+
+    assert baseline.experiment_id == duplicate.experiment_id
+
+def test_changed_experiment_configuration_has_different_id():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="model-v1",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "similarity": {
+                "threshold": 0.8,
+            }
+        },
+    )
+
+    changed = Experiment(
+        name="baseline-v1",
+        model="model-v2",
+        prompt="Answer the question.",
+        dataset="math-v1",
+        run=run,
+        evaluator_config={
+            "similarity": {
+                "threshold": 0.8,
+            }
+        },
+    )
+
+    assert baseline.experiment_id != changed.experiment_id
