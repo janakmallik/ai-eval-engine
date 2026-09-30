@@ -347,3 +347,68 @@ def test_changed_experiment_configuration_has_different_id():
     )
 
     assert baseline.experiment_id != changed.experiment_id
+
+def test_experiment_accepts_version_metadata():
+    run = EvaluationRun(results=[])
+
+    experiment = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        model_version="2026-09-30",
+        prompt="Answer the question.",
+        prompt_version="prompt-v3",
+        dataset="math",
+        dataset_version="2026-09-29",
+        run=run,
+    )
+
+    assert experiment.model_version == "2026-09-30"
+    assert experiment.prompt_version == "prompt-v3"
+    assert experiment.dataset_version == "2026-09-29"
+
+def test_changed_version_metadata_has_different_id():
+    run = EvaluationRun(results=[])
+
+    baseline = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        model_version="v1",
+        prompt="Answer the question.",
+        prompt_version="v1",
+        dataset="math",
+        dataset_version="v1",
+        run=run,
+    )
+
+    changed = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        model_version="v2",
+        prompt="Answer the question.",
+        prompt_version="v1",
+        dataset="math",
+        dataset_version="v1",
+        run=run,
+    )
+
+    assert baseline.experiment_id != changed.experiment_id
+
+def test_experiment_to_dict_includes_version_metadata():
+    run = EvaluationRun(results=[])
+
+    experiment = Experiment(
+        name="baseline-v1",
+        model="gpt-model",
+        model_version="v2",
+        prompt="Answer the question.",
+        prompt_version="prompt-v3",
+        dataset="math",
+        dataset_version="dataset-v5",
+        run=run,
+    )
+
+    data = experiment.to_dict()
+
+    assert data["model_version"] == "v2"
+    assert data["prompt_version"] == "prompt-v3"
+    assert data["dataset_version"] == "dataset-v5"
