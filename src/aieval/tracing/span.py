@@ -1,6 +1,7 @@
-# Span is a small, self-timing, uniquely-identified unit of work that knows when it 
-# started, when it ended (or that it hasn't), how long it took, and which parent it 
+# Span is a small, self-timing, uniquely-identified unit of work that knows when it
+# started, when it ended (or that it hasn't), how long it took, and which parent it
 # belongs to — the building block of traces.
+
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -25,3 +26,17 @@ class Span:
 
     def end(self) -> None:
         self.ended_at = datetime.now(timezone.utc)
+
+    def to_dict(self) -> dict:
+        return {
+            "span_id": self.span_id,
+            "name": self.name,
+            "started_at": self.started_at.isoformat(),
+            "ended_at": (
+                self.ended_at.isoformat()
+                if self.ended_at is not None
+                else None
+            ),
+            "duration": self.duration,
+            "parent_span_id": self.parent_span_id,
+        }

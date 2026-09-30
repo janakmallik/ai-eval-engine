@@ -119,3 +119,78 @@ def test_span_parent_is_optional():
     span = Span(name="retrieval")
 
     assert span.parent_span_id is None
+
+def test_trace_starts_span():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    assert span.name == "retrieval"
+    assert span in trace.spans
+
+
+def test_trace_starts_multiple_spans():
+    trace = Trace()
+
+    first = trace.start_span("retrieval")
+    second = trace.start_span("llm")
+
+    assert trace.spans == [first, second]
+
+
+def test_trace_starts_span_without_parent():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    assert span.parent_span_id is None
+
+def test_trace_starts_child_span():
+    trace = Trace()
+
+    parent = trace.start_span("retrieval")
+    child = trace.start_span(
+        "vector_search",
+        parent_span_id=parent.span_id,
+    )
+
+    assert child.parent_span_id == parent.span_id
+    assert child in trace.spans
+
+def test_trace_to_dict_includes_trace_identity():
+    trace = Trace()
+
+    data = trace.to_dict()
+
+    assert data["trace_id"] == trace.trace_id
+
+
+def test_trace_to_dict_includes_spans():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    data = trace.to_dict()
+
+    assert len(data["spans"]) == 1
+    assert data["spans"][0]["span_id"] == span.span_id
+    assert data["spans"][0]["name"] == "retrieval"
+
+
+def test_trace_to_dict_serializes_timestamps():
+    trace = Trace()
+    trace.end()
+
+    data = trace.to_dict()
+
+    assert isinstance(data["started_at"], str)
+    assert isinstance(data["ended_at"], str)
+
+
+def test_trace_to_dict_includes_duration():
+    trace = Trace()
+    trace.end()
+
+    data = trace.to_dict()
+
+    assert data["duration"] is not None
