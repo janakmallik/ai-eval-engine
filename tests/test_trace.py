@@ -483,3 +483,126 @@ def test_span_cannot_add_event_after_end():
     span.add_event("late_event")
 
     assert span.events == []
+
+def test_span_status_defaults_to_unset():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    assert span.status == "unset"
+
+def test_span_status_can_be_updated():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.set_status("ok")
+
+    assert span.status == "ok"
+
+def test_span_to_dict_includes_status():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_status("ok")
+
+    data = span.to_dict()
+
+    assert data["status"] == "ok"
+
+def test_span_error_status_stores_message():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.set_status("error", "vector database unavailable")
+
+    assert span.status == "error"
+    assert span.status_message == "vector database unavailable"
+
+def test_span_to_dict_includes_status_message():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_status("error", "vector database unavailable")
+
+    data = span.to_dict()
+
+    assert data["status"] == "error"
+    assert data["status_message"] == "vector database unavailable"
+
+def test_span_cannot_change_status_after_end():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_status("ok")
+
+    span.end()
+    span.set_status("error", "late failure")
+
+    assert span.status == "ok"
+    assert span.status_message is None
+
+def test_span_end_preserves_status():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_status("ok")
+
+    span.end()
+
+    assert span.status == "ok"
+    assert span.status_message is None
+
+def test_span_context_manager_ends_span():
+    trace = Trace()
+
+    with trace.start_span("retrieval") as span:
+        assert span.ended_at is None
+
+    assert span.ended_at is not None
+
+# verify it also ends when an exception occurs
+def test_span_context_manager_ends_span_on_exception():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            raise ValueError("retrieval failed")
+    except ValueError:
+        pass
+
+    assert span.ended_at is not None
+
+# automatically mark exceptions as errors
+def test_span_context_manager_marks_exception_as_error():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            raise ValueError("retrieval failed")
+    except ValueError:
+        pass
+
+    assert span.status == "error"
+    assert span.status_message == "retrieval failed"
+
+# preserve an explicitly set error status
+def test_span_context_manager_preserves_existing_error_status():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            span.set_status("error", "database timeout")
+            raise ValueError("different exception")
+    except ValueError:
+        pass
+
+    assert span.status == "error"
+    assert span.status_message == "database timeout"

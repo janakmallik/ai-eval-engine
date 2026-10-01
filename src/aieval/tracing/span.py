@@ -17,6 +17,8 @@ class Span:
     )
     ended_at: datetime | None = None
     parent_span_id: str | None = None
+    status: str = "unset"
+    status_message: str | None = None
     attributes: dict[str, object] = field(default_factory=dict)
     events: list[dict[str, object]] = field(default_factory=list)
 
@@ -26,6 +28,24 @@ class Span:
             return None
 
         return (self.ended_at - self.started_at).total_seconds()
+
+    def __enter__(self) -> "Span":
+        return self
+
+    # no exception → status stays "unset"
+    # exception + "unset" → automatically "error"
+    # exception + "ok" → stays "ok"
+    # exception + existing "error" → preserves its existing message
+    def __exit__(
+        self,
+        exc_type,
+        exc_value,
+        traceback,
+    ) -> None:
+        if exc_value is not None and self.status == "unset":
+            self.set_status("error", str(exc_value))
+
+        self.end()
 
     def end(self) -> None:
         self.ended_at = datetime.now(timezone.utc)
@@ -42,6 +62,8 @@ class Span:
             ),
             "duration": self.duration,
             "parent_span_id": self.parent_span_id,
+            "status": self.status,
+            "status_message": self.status_message,
             "attributes": self.attributes,
             "events": [
                 {
@@ -72,3 +94,14 @@ class Span:
                 "attributes": dict(attributes or {}),
             }
         )
+
+    def set_status(
+        self,
+        status: str,
+        status_message: str | None = None,
+    ) -> None:
+        if self.ended_at is not None:
+            return
+
+        self.status = status
+        self.status_message = status_message
