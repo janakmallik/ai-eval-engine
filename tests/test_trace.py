@@ -606,3 +606,218 @@ def test_span_context_manager_preserves_existing_error_status():
 
     assert span.status == "error"
     assert span.status_message == "database timeout"
+
+def test_span_records_exception():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("vector database unavailable")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    assert len(span.events) == 1
+
+def test_span_records_exception_details():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("vector database unavailable")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    event = span.events[0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "ValueError"
+    assert event["attributes"]["exception.message"] == "vector database unavailable"
+    assert event["attributes"]["exception.stacktrace"]
+
+# exception event timestamp
+# verify that record_exception() also records when the exception happened.
+def test_span_records_exception_timestamp():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("vector database unavailable")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    event = span.events[0]
+
+    assert isinstance(event["timestamp"], datetime)
+
+# capture the stack trace
+# observability feature rather than just another field. When an AI/RAG operation
+# fails, the message tells us what failed, while the stack trace helps identify where
+# it failed.
+def test_span_records_exception_stacktrace():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("vector database unavailable")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    event = span.events[0]
+
+    assert "exception.stacktrace" in event["attributes"]
+    assert "ValueError: vector database unavailable" in event["attributes"]["exception.stacktrace"]
+
+# don't allow exceptions after span end
+# because we already established that a finished span is immutable.
+def test_span_cannot_record_exception_after_end():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.end()
+
+    try:
+        raise ValueError("late failure")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    assert span.events == []
+
+# multiple exceptions, A real RAG/agent span could potentially encounter and record
+# more than one exception event.
+def test_span_can_record_multiple_exceptions():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("first failure")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    try:
+        raise TimeoutError("second failure")
+    except TimeoutError as exc:
+        span.record_exception(exc)
+
+    assert len(span.events) == 2
+    assert span.events[0]["attributes"]["exception.type"] == "ValueError"
+    assert span.events[0]["attributes"]["exception.message"] == "first failure"
+    assert span.events[1]["attributes"]["exception.type"] == "TimeoutError"
+    assert span.events[1]["attributes"]["exception.message"] == "second failure"
+
+# serialize exception events, We've tested the in-memory representation. Now let's
+# make sure the exception information survives to_dict().
+def test_span_to_dict_preserves_exception_details():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        raise ValueError("vector database unavailable")
+    except ValueError as exc:
+        span.record_exception(exc)
+
+    data = span.to_dict()
+
+    event = data["events"][0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "ValueError"
+    assert event["attributes"]["exception.message"] == (
+        "vector database unavailable"
+    )
+    assert "exception.stacktrace" in event["attributes"]
+
+# automatic exception recording from the context manager
+def test_span_context_manager_records_exception():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            raise ValueError("retrieval failed")
+    except ValueError:
+        pass
+
+    assert len(span.events) == 1
+
+    event = span.events[0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "ValueError"
+    assert event["attributes"]["exception.message"] == "retrieval failed"
+
+# context manager preserves the exception event, We already tested that it records
+# the event. Now make sure ending the span doesn't accidentally remove or mutate it.
+def test_span_context_manager_preserves_exception_event_after_end():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            raise ValueError("retrieval failed")
+    except ValueError:
+        pass
+
+    assert len(span.events) == 1
+
+    event = span.events[0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "ValueError"
+    assert event["attributes"]["exception.message"] == "retrieval failed"
+
+# exception event + status together, already tested both separately. Now let's lock
+# down the complete behavior of the context manager.
+def test_span_context_manager_records_exception_and_error_status():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            raise ValueError("vector database unavailable")
+    except ValueError:
+        pass
+
+    assert span.status == "error"
+    assert span.status_message == "vector database unavailable"
+
+    assert len(span.events) == 1
+
+    event = span.events[0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "ValueError"
+    assert event["attributes"]["exception.message"] == (
+        "vector database unavailable"
+    )
+    assert "exception.stacktrace" in event["attributes"]
+
+# handled inside span
+# record_exception()
+# with exits normally
+# no duplicate automatic event
+def test_span_does_not_record_handled_exception_twice():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    try:
+        with span:
+            try:
+                raise ValueError("temporary failure")
+            except ValueError:
+                span.record_exception(
+                    ValueError("temporary failure")
+                )
+    except ValueError:
+        pass
+
+    assert len(span.events) == 1

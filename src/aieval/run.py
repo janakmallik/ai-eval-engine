@@ -5,11 +5,13 @@ from dataclasses import dataclass, field
 
 from aieval.result import EvaluationResult
 from aieval.summary import EvaluationSummary
+from aieval.tracing.trace import Trace
 
 @dataclass
 class EvaluationRun:
     results: list[EvaluationResult]
     metadata: dict[str, object] = field(default_factory=dict)
+    trace: Trace | None = None
 
     @property
     def total(self) -> int:

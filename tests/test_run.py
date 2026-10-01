@@ -1,6 +1,6 @@
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-
+from aieval.tracing.trace import Trace
 
 def test_evaluation_run():
 
@@ -274,3 +274,19 @@ def test_evaluation_run_to_dict_includes_run_id():
     data = run.to_dict()
 
     assert data["run_id"] == run.run_id
+
+# want an EvaluationRun to be able to carry a trace, First integration test
+def test_evaluation_run_can_store_trace():
+    trace = Trace()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    assert run.trace is trace
+
+def test_evaluation_run_trace_defaults_to_none():
+    run = EvaluationRun(results=[])
+
+    assert run.trace is None

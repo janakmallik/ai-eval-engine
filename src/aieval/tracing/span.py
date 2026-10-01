@@ -5,7 +5,7 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
-
+import traceback
 
 @dataclass
 class Span:
@@ -36,14 +36,12 @@ class Span:
     # exception + "unset" → automatically "error"
     # exception + "ok" → stays "ok"
     # exception + existing "error" → preserves its existing message
-    def __exit__(
-        self,
-        exc_type,
-        exc_value,
-        traceback,
-    ) -> None:
-        if exc_value is not None and self.status == "unset":
-            self.set_status("error", str(exc_value))
+    def __exit__(self, exc_type, exc_value, traceback):
+        if exc_value is not None:
+            self.record_exception(exc_value)
+
+            if self.status == "unset":
+                self.set_status("error", str(exc_value))
 
         self.end()
 
@@ -93,6 +91,18 @@ class Span:
                 "timestamp": datetime.now(timezone.utc),
                 "attributes": dict(attributes or {}),
             }
+        )
+
+    def record_exception(self, exc: BaseException) -> None:
+        self.add_event(
+            "exception",
+            attributes={
+                "exception.type": type(exc).__name__,
+                "exception.message": str(exc),
+                "exception.stacktrace": "".join(
+                    traceback.format_exception(type(exc), exc, exc.__traceback__)
+                ),
+            },
         )
 
     def set_status(
