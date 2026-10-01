@@ -17,6 +17,8 @@ class Span:
     )
     ended_at: datetime | None = None
     parent_span_id: str | None = None
+    attributes: dict[str, object] = field(default_factory=dict)
+    events: list[dict[str, object]] = field(default_factory=list)
 
     @property
     def duration(self) -> float | None:
@@ -40,4 +42,33 @@ class Span:
             ),
             "duration": self.duration,
             "parent_span_id": self.parent_span_id,
+            "attributes": self.attributes,
+            "events": [
+                {
+                    "name": event["name"],
+                    "timestamp": event["timestamp"].isoformat(),
+                    "attributes": event["attributes"],
+                }
+                for event in self.events
+            ],
         }
+
+    def set_attribute(self, key: str, value: object) -> None:
+        self.attributes[key] = value
+
+# once a span has ended, subsequent span mutations such as adding events should be ignored.
+    def add_event(
+        self,
+        name: str,
+        attributes: dict | None = None,
+    ) -> None:
+        if self.ended_at is not None:
+            return
+
+        self.events.append(
+            {
+                "name": name,
+                "timestamp": datetime.now(timezone.utc),
+                "attributes": dict(attributes or {}),
+            }
+        )

@@ -223,3 +223,263 @@ def test_trace_supports_nested_span_hierarchy():
 
     assert retrieval.parent_span_id == request.span_id
     assert reranking.parent_span_id == retrieval.span_id
+
+def test_span_stores_attributes():
+    trace = Trace()
+
+    span = trace.start_span(
+        "retrieval",
+    )
+
+    span.set_attribute("model", "embedding-model")
+    span.set_attribute("document_count", 5)
+
+    assert span.attributes == {
+        "model": "embedding-model",
+        "document_count": 5,
+    }
+
+def test_span_updates_existing_attribute():
+    trace = Trace()
+
+    span = trace.start_span("generation")
+
+    span.set_attribute("model", "model-v1")
+    span.set_attribute("model", "model-v2")
+
+    assert span.attributes["model"] == "model-v2"
+
+# want to prove that two spans don't accidentally share the same attributes dictionary.
+def test_spans_have_independent_attributes():
+    trace = Trace()
+
+    first = trace.start_span("retrieval")
+    second = trace.start_span("generation")
+
+    first.set_attribute("model", "embedding-model")
+
+    assert first.attributes == {
+        "model": "embedding-model",
+    }
+    assert second.attributes == {}
+
+# confirms the Span itself now serializes its attributes correctly.
+def test_span_to_dict_includes_attributes():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_attribute("model", "embedding-model")
+    span.set_attribute("document_count", 5)
+
+    data = span.to_dict()
+
+    assert data["attributes"] == {
+        "model": "embedding-model",
+        "document_count": 5,
+    }
+
+# spans carry attributes and parent/child relationships
+def test_trace_to_dict_includes_span_attributes():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_attribute("model", "embedding-model")
+
+    data = trace.to_dict()
+
+    assert data["spans"][0]["attributes"] == {
+        "model": "embedding-model",
+    }
+
+# attributes are preserved when the span is nested.
+# last test passing means the span metadata layer is now behaving correctly:
+# attributes are stored independently, serialized, and preserved through parent/child
+# spans.
+def test_child_span_to_dict_includes_parent_and_attributes():
+    trace = Trace()
+
+    parent = trace.start_span("request")
+    child = trace.start_span("retrieval", parent=parent)
+    child.set_attribute("model", "embedding-model")
+
+    data = trace.to_dict()
+
+    child_data = next(
+        span for span in data["spans"]
+        if span["span_id"] == child.span_id
+    )
+
+    assert child_data["parent_span_id"] == parent.span_id
+    assert child_data["attributes"] == {
+        "model": "embedding-model",
+    }
+
+def test_span_adds_event():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event("cache_miss")
+
+    assert len(span.events) == 1
+    assert span.events[0]["name"] == "cache_miss"
+
+def test_span_adds_event_with_attributes():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event(
+        "cache_miss",
+        attributes={
+            "cache": "redis",
+            "key": "user:123",
+        },
+    )
+
+    assert span.events[0]["name"] == "cache_miss"
+    assert span.events[0]["attributes"] == {
+        "cache": "redis",
+        "key": "user:123",
+    }
+
+def test_span_event_without_attributes_uses_empty_dict():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event("cache_miss")
+
+    assert span.events[0]["attributes"] == {}
+
+def test_span_to_dict_serializes_event_timestamp():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.add_event("cache_miss")
+
+    data = span.to_dict()
+
+    assert isinstance(data["events"][0]["timestamp"], str)
+
+def test_span_to_dict_includes_complete_event():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.add_event(
+        "cache_miss",
+        attributes={
+            "cache": "redis",
+            "key": "user:123",
+        },
+    )
+
+    data = span.to_dict()
+
+    event = data["events"][0]
+
+    assert event["name"] == "cache_miss"
+    assert isinstance(event["timestamp"], str)
+    assert event["attributes"] == {
+        "cache": "redis",
+        "key": "user:123",
+    }
+
+def test_span_preserves_event_order():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event("cache_miss")
+    span.add_event("vector_search")
+    span.add_event("documents_found")
+
+    assert [event["name"] for event in span.events] == [
+        "cache_miss",
+        "vector_search",
+        "documents_found",
+    ]
+
+def test_span_to_dict_preserves_event_order():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event("cache_miss")
+    span.add_event("vector_search")
+    span.add_event("documents_found")
+
+    data = span.to_dict()
+
+    assert [event["name"] for event in data["events"]] == [
+        "cache_miss",
+        "vector_search",
+        "documents_found",
+    ]
+
+# make sure each event keeps its own attributes and doesn't accidentally share the same dictionary.
+def test_span_events_have_independent_attributes():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event(
+        "cache_miss",
+        attributes={"cache": "redis"},
+    )
+    span.add_event(
+        "vector_search",
+        attributes={"index": "documents"},
+    )
+
+    assert span.events[0]["attributes"] == {
+        "cache": "redis",
+    }
+    assert span.events[1]["attributes"] == {
+        "index": "documents",
+    }
+
+# verify the entire list of events survives serialization correctly.
+def test_span_to_dict_preserves_event_attributes():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+
+    span.add_event(
+        "cache_miss",
+        attributes={
+            "cache": "redis",
+            "key": "user:123",
+        },
+    )
+    span.add_event(
+        "vector_search",
+        attributes={
+            "index": "documents",
+            "top_k": 5,
+        },
+    )
+
+    data = span.to_dict()
+
+    assert data["events"][0]["attributes"] == {
+        "cache": "redis",
+        "key": "user:123",
+    }
+
+    assert data["events"][1]["attributes"] == {
+        "index": "documents",
+        "top_k": 5,
+    }
+
+# protect span mutation after end()
+# Once a span has ended, we shouldn't keep modifying it.
+def test_span_cannot_add_event_after_end():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.end()
+
+    span.add_event("late_event")
+
+    assert span.events == []
