@@ -916,39 +916,3 @@ def test_evaluate_dataset_evaluator_span_records_exception():
         pass
     else:
         raise AssertionError("Expected RuntimeError")
-
-    # We expect:
-    # 0 = evaluation
-    # 1 = evaluation.case
-    # 2 = model
-    # 3 = evaluator.exploding
-
-def test_evaluate_dataset_evaluator_span_records_exception():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
-
-    def model(text):
-        return text
-
-    class ExplodingEvaluator:
-        name = "exploding"
-
-        def evaluate(self, context):
-            raise RuntimeError("evaluator crashed")
-
-    try:
-        evaluate_dataset(
-            model=model,
-            dataset=dataset,
-            evaluators=[ExplodingEvaluator()],
-            enable_tracing=True,
-        )
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError("Expected RuntimeError")

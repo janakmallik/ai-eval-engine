@@ -81,30 +81,34 @@ def evaluate_dataset(
             )
 
             try:
-                result = evaluator.evaluate(context)
-                results.append(result)
+                if evaluator_span:
+                    with evaluator_span:
+                        result = evaluator.evaluate(context)
 
+                        evaluator_span.set_attribute(
+                            "evaluator.name",
+                            evaluator_name,
+                        )
+                        evaluator_span.set_attribute(
+                            "evaluation.case_id",
+                            result.case_id,
+                        )
+                        evaluator_span.set_attribute(
+                            "evaluation.score",
+                            result.score,
+                        )
+                        evaluator_span.set_attribute(
+                            "evaluation.passed",
+                            result.passed,
+                        )
+                else:
+                    result = evaluator.evaluate(context)
+
+                results.append(result)
                 case_passed = case_passed and result.passed
 
-                if evaluator_span:
-                    evaluator_span.set_attribute(
-                        "evaluator.name",
-                        evaluator_name,
-                    )
-                    evaluator_span.set_attribute(
-                        "evaluation.case_id",
-                        result.case_id,
-                    )
-                    evaluator_span.set_attribute(
-                        "evaluation.score",
-                        result.score,
-                    )
-                    evaluator_span.set_attribute(
-                        "evaluation.passed",
-                        result.passed,
-                    )
             finally:
-                if evaluator_span:
+                if evaluator_span and evaluator_span.ended_at is None:
                     evaluator_span.end()
 
         if case_passed:

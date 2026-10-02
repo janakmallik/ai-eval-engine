@@ -1,8 +1,6 @@
 from datetime import datetime, timezone
 
 from aieval.tracing.trace import Trace
-from aieval.dataset import EvalCase
-from aieval.runner import evaluate_dataset
 
 def test_trace_has_id():
     trace = Trace()
@@ -842,35 +840,3 @@ def test_span_records_exception_and_marks_error():
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "RuntimeError"
     assert event["attributes"]["exception.message"] == "evaluator crashed"
-
-def test_evaluate_dataset_evaluator_span_records_exception():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
-
-    def model(text):
-        return text
-
-    class ExplodingEvaluator:
-        name = "exploding"
-
-        def evaluate(self, context):
-            raise RuntimeError("evaluator crashed")
-
-    evaluator_span = None
-
-    try:
-        evaluate_dataset(
-            model=model,
-            dataset=dataset,
-            evaluators=[ExplodingEvaluator()],
-            enable_tracing=True,
-        )
-    except RuntimeError:
-        pass
-    else:
-        raise AssertionError("Expected RuntimeError")
