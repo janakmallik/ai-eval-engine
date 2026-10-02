@@ -7,6 +7,8 @@ from aieval.result import EvaluationResult
 
 class ExactMatchEvaluator:
 
+    name = "exact_match"
+
     def __init__(
         self,
         normalizer: Callable[[str], str] = normalize_text,
@@ -26,7 +28,7 @@ class ExactMatchEvaluator:
 
         return EvaluationResult(
             case_id=context.case.id,
-            evaluator_name="exact_match",
+            evaluator_name=self.name,
             expected=context.case.expected,
             actual=context.actual,
             score=score,

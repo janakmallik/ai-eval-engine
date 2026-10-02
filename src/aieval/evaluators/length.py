@@ -5,6 +5,8 @@ from aieval.result import EvaluationResult
 
 class LengthEvaluator(Evaluator):
 
+    name = "length"
+
     def __init__(
         self,
         max_length: int,
@@ -24,7 +26,7 @@ class LengthEvaluator(Evaluator):
 
         return EvaluationResult(
             case_id=context.case.id,
-            evaluator_name="length",
+            evaluator_name=self.name,
             expected=str(self.max_length),
             actual=str(actual_length),
             score=score,

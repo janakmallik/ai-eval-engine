@@ -1,7 +1,8 @@
 from datetime import datetime, timezone
 
 from aieval.tracing.trace import Trace
-
+from aieval.dataset import EvalCase
+from aieval.runner import evaluate_dataset
 
 def test_trace_has_id():
     trace = Trace()
@@ -821,3 +822,55 @@ def test_span_does_not_record_handled_exception_twice():
         pass
 
     assert len(span.events) == 1
+
+def test_span_records_exception_and_marks_error():
+    span = Span(name="evaluator.exploding")
+
+    try:
+        with span:
+            raise RuntimeError("evaluator crashed")
+    except RuntimeError:
+        pass
+
+    assert span.status == "error"
+    assert span.status_message == "evaluator crashed"
+    assert span.ended_at is not None
+    assert len(span.events) == 1
+
+    event = span.events[0]
+
+    assert event["name"] == "exception"
+    assert event["attributes"]["exception.type"] == "RuntimeError"
+    assert event["attributes"]["exception.message"] == "evaluator crashed"
+
+def test_evaluate_dataset_evaluator_span_records_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    class ExplodingEvaluator:
+        name = "exploding"
+
+        def evaluate(self, context):
+            raise RuntimeError("evaluator crashed")
+
+    evaluator_span = None
+
+    try:
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExplodingEvaluator()],
+            enable_tracing=True,
+        )
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")

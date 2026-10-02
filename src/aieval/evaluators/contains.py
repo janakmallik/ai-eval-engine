@@ -4,6 +4,8 @@ from aieval.result import EvaluationResult
 
 class ContainsEvaluator:
 
+    name = "contains"
+
     def evaluate(
         self,
         context: EvaluationContext,
@@ -17,7 +19,7 @@ class ContainsEvaluator:
 
         return EvaluationResult(
             case_id=context.case.id,
-            evaluator_name="contains",
+            evaluator_name=self.name,
             expected=context.case.expected,
             actual=context.actual,
             score=score,

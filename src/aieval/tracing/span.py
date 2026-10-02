@@ -42,6 +42,8 @@ class Span:
 
             if self.status == "unset":
                 self.set_status("error", str(exc_value))
+        elif self.status == "unset":
+            self.set_status("ok")
 
         self.end()
 

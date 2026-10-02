@@ -5,6 +5,7 @@ from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.runner import evaluate_dataset
 from aieval.evaluators.length import LengthEvaluator
+from aieval.result import EvaluationResult
 
 def test_evaluate_dataset():
 
@@ -578,3 +579,376 @@ def test_evaluate_dataset_evaluator_exception_ends_evaluator_span():
             evaluators=[FailingEvaluator()],
             enable_tracing=True,
         )
+
+def test_evaluate_dataset_evaluator_span_contains_evaluator_name():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    evaluator = ExactMatchEvaluator()
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[evaluator],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    evaluator_span = run.trace.spans[3]
+
+    assert evaluator_span.name == "evaluator.exact_match"
+
+def test_evaluate_dataset_evaluator_span_contains_result_attributes():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    evaluator = ExactMatchEvaluator()
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[evaluator],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    evaluator_span = run.trace.spans[3]
+
+    assert evaluator_span.attributes["evaluator.name"] == "exact_match"
+    assert evaluator_span.attributes["evaluation.score"] == 1.0
+    assert evaluator_span.attributes["evaluation.passed"] is True
+
+def test_evaluate_dataset_model_span_is_ok_after_success():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    model_span = run.trace.spans[2]
+
+    assert model_span.status == "ok"
+
+def test_evaluate_dataset_model_span_contains_result_attributes():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text.upper()
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    model_span = run.trace.spans[2]
+
+    assert model_span.attributes["model.input"] == "hello"
+    assert model_span.attributes["model.output"] == "HELLO"
+
+def test_evaluate_dataset_case_span_contains_case_attributes():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    case_span = run.trace.spans[1]
+
+    assert case_span.attributes["case.id"] == "1"
+    assert case_span.attributes["case.input"] == "hello"
+    assert case_span.attributes["case.expected"] == "hello"
+
+def test_evaluate_dataset_evaluator_span_is_error_after_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    class FailingEvaluator:
+        def evaluate(self, context):
+            raise ValueError("evaluation failed")
+
+    with pytest.raises(ValueError, match="evaluation failed"):
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[FailingEvaluator()],
+            enable_tracing=True,
+        )
+
+def test_evaluate_dataset_evaluator_span_contains_case_id():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    evaluator_span = run.trace.spans[3]
+
+    assert evaluator_span.attributes["evaluation.case_id"] == "1"
+
+def test_evaluate_dataset_case_span_contains_evaluation_outcome():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    case_span = run.trace.spans[1]
+
+    assert case_span.attributes["evaluation.passed"] is True
+
+def test_evaluate_dataset_case_span_is_false_when_evaluator_fails():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    class FailingEvaluator:
+        name = "failing"
+
+        def evaluate(self, context):
+            return EvaluationResult(
+                case_id=context.case.id,
+                evaluator_name=self.name,
+                expected=context.case.expected,
+                actual=context.actual,
+                score=0.0,
+                passed=False,
+            )
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[FailingEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    case_span = run.trace.spans[1]
+
+    assert case_span.attributes["evaluation.passed"] is False
+
+def test_evaluate_dataset_root_span_contains_run_attributes():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    root_span = run.trace.spans[0]
+
+    assert root_span.attributes["evaluation.total_cases"] == 1
+    assert root_span.attributes["evaluation.total_results"] == 1
+    assert root_span.attributes["evaluation.passed"] == 1
+    assert root_span.attributes["evaluation.failed"] == 0
+    assert root_span.attributes["evaluation.pass_rate"] == 1.0
+
+def test_evaluate_dataset_root_span_contains_case_outcome_counts():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        ),
+        EvalCase(
+            id="2",
+            input="world",
+            expected="hello",
+        ),
+    ]
+
+    def model(text):
+        return text
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    root_span = run.trace.spans[0]
+
+    assert root_span.attributes["evaluation.total_cases"] == 2
+    assert root_span.attributes["evaluation.passed_cases"] == 1
+    assert root_span.attributes["evaluation.failed_cases"] == 1
+
+def test_evaluate_dataset_evaluator_span_records_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    class ExplodingEvaluator:
+        name = "exploding"
+
+        def evaluate(self, context):
+            raise RuntimeError("evaluator crashed")
+
+    try:
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExplodingEvaluator()],
+            enable_tracing=True,
+        )
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
+
+    # We expect:
+    # 0 = evaluation
+    # 1 = evaluation.case
+    # 2 = model
+    # 3 = evaluator.exploding
+
+def test_evaluate_dataset_evaluator_span_records_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    def model(text):
+        return text
+
+    class ExplodingEvaluator:
+        name = "exploding"
+
+        def evaluate(self, context):
+            raise RuntimeError("evaluator crashed")
+
+    try:
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExplodingEvaluator()],
+            enable_tracing=True,
+        )
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
