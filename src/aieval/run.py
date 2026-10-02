@@ -98,6 +98,7 @@ class EvaluationRun:
             "schema_version": 1,
             "results": [result.to_dict() for result in self.results],
             "metadata": self.metadata,
+            "trace": self.trace.to_dict() if self.trace is not None else None,
             "total": self.total,
             "passed": self.passed,
             "failed": self.failed,

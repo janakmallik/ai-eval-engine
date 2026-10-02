@@ -109,6 +109,7 @@ def test_json_reporter_writes_file(tmp_path):
             }
         },
         "metadata": {},
+        "trace": None,
     }
 
 def test_json_reporter_reads_evaluation_run(tmp_path):

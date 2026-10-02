@@ -209,6 +209,7 @@ def test_evaluation_run_to_dict():
             }
         },
         "metadata": {},
+        "trace": None,
     }
 
 def test_evaluation_run_has_stable_id():
@@ -290,3 +291,22 @@ def test_evaluation_run_trace_defaults_to_none():
     run = EvaluationRun(results=[])
 
     assert run.trace is None
+
+def test_evaluation_run_to_dict_includes_trace():
+    trace = Trace()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    data = run.to_dict()
+
+    assert data["trace"] == trace.to_dict()
+
+def test_evaluation_run_to_dict_trace_defaults_to_none():
+    run = EvaluationRun(results=[])
+
+    data = run.to_dict()
+
+    assert data["trace"] is None
