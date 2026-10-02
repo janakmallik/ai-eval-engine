@@ -2,6 +2,7 @@ from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.tracing.trace import Trace
 
+
 def test_evaluation_run():
 
     results = [
@@ -99,10 +100,7 @@ def test_evaluation_run_filters_by_evaluator():
     exact_match_results = run.by_evaluator("exact_match")
 
     assert len(exact_match_results) == 2
-    assert all(
-        result.evaluator_name == "exact_match"
-        for result in exact_match_results
-    )
+    assert all(result.evaluator_name == "exact_match" for result in exact_match_results)
 
 
 def test_evaluation_run_summaries():
@@ -147,6 +145,7 @@ def test_evaluation_run_summaries():
     assert summaries["contains"].total == 1
     assert summaries["contains"].passed == 1
     assert summaries["contains"].failed == 0
+
 
 # Verifies that EvaluationRun.to_dict() serializes the run's aggregate stats (total, passed, failed, score, pass_rate) along with a nested per-evaluator summaries dict, where each summary is itself serialized via EvaluationSummary.to_dict().
 def test_evaluation_run_to_dict():
@@ -212,6 +211,7 @@ def test_evaluation_run_to_dict():
         "trace": None,
     }
 
+
 def test_evaluation_run_has_stable_id():
     run = EvaluationRun(
         results=[],
@@ -222,6 +222,7 @@ def test_evaluation_run_has_stable_id():
     )
 
     assert run.run_id
+
 
 def test_identical_evaluation_runs_have_same_id():
     results = []
@@ -244,6 +245,7 @@ def test_identical_evaluation_runs_have_same_id():
 
     assert run1.run_id == run2.run_id
 
+
 def test_changed_evaluation_run_has_different_id():
     run1 = EvaluationRun(
         results=[],
@@ -263,6 +265,7 @@ def test_changed_evaluation_run_has_different_id():
 
     assert run1.run_id != run2.run_id
 
+
 def test_evaluation_run_to_dict_includes_run_id():
     run = EvaluationRun(
         results=[],
@@ -276,6 +279,7 @@ def test_evaluation_run_to_dict_includes_run_id():
 
     assert data["run_id"] == run.run_id
 
+
 # want an EvaluationRun to be able to carry a trace, First integration test
 def test_evaluation_run_can_store_trace():
     trace = Trace()
@@ -287,10 +291,12 @@ def test_evaluation_run_can_store_trace():
 
     assert run.trace is trace
 
+
 def test_evaluation_run_trace_defaults_to_none():
     run = EvaluationRun(results=[])
 
     assert run.trace is None
+
 
 def test_evaluation_run_to_dict_includes_trace():
     trace = Trace()
@@ -303,6 +309,7 @@ def test_evaluation_run_to_dict_includes_trace():
     data = run.to_dict()
 
     assert data["trace"] == trace.to_dict()
+
 
 def test_evaluation_run_to_dict_trace_defaults_to_none():
     run = EvaluationRun(results=[])

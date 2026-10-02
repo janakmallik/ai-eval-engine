@@ -32,6 +32,7 @@ def test_eval_dataset_loads_from_json(tmp_path):
     assert dataset.cases[1].input == "What is the capital of France?"
     assert dataset.cases[1].expected == "Paris"
 
+
 def test_eval_dataset_rejects_invalid_top_level_json(tmp_path):
     path = tmp_path / "dataset.json"
 
@@ -46,6 +47,7 @@ def test_eval_dataset_rejects_invalid_top_level_json(tmp_path):
         pass
     else:
         raise AssertionError("Expected ValueError")
+
 
 def test_eval_dataset_rejects_missing_fields(tmp_path):
     data = [
@@ -65,6 +67,7 @@ def test_eval_dataset_rejects_missing_fields(tmp_path):
     else:
         raise AssertionError("Expected ValueError")
 
+
 def test_eval_dataset_rejects_invalid_json(tmp_path):
     path = tmp_path / "dataset.json"
 
@@ -79,6 +82,7 @@ def test_eval_dataset_rejects_invalid_json(tmp_path):
         pass
     else:
         raise AssertionError("Expected ValueError")
+
 
 def test_eval_dataset_to_json(tmp_path):
     dataset = EvalDataset(
@@ -113,6 +117,7 @@ def test_eval_dataset_to_json(tmp_path):
         },
     ]
 
+
 def test_eval_dataset_is_iterable():
     dataset = EvalDataset(
         cases=[
@@ -132,6 +137,7 @@ def test_eval_dataset_is_iterable():
     cases = list(dataset)
 
     assert cases == dataset.cases
+
 
 def test_eval_dataset_has_length():
     dataset = EvalDataset(

@@ -52,6 +52,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     return parser
 
+
 def parse_evaluator_thresholds(
     values: list[str],
 ) -> dict[str, float]:
@@ -62,6 +63,7 @@ def parse_evaluator_thresholds(
         thresholds[name] = float(threshold)
 
     return thresholds
+
 
 def main(args: list[str] | None = None) -> int:
     parser = build_parser()
@@ -106,6 +108,7 @@ def main(args: list[str] | None = None) -> int:
 
     return 0
 
+
 def format_regression_report(
     comparison: ComparisonResult,
     regression_result: RegressionResult,
@@ -133,21 +136,18 @@ def format_regression_report(
         "  evaluator regressions:",
     ]
 
-    for evaluator_name in sorted(
-        regression_result.evaluator_regressions
-    ):
+    for evaluator_name in sorted(regression_result.evaluator_regressions):
         delta = comparison.evaluator_deltas[evaluator_name]
         lines.append(f"    - {evaluator_name}: {delta:+.3f}")
 
     lines.append("")
     lines.append("Evaluator deltas:")
 
-    for evaluator_name, delta in sorted(
-        comparison.evaluator_deltas.items()
-    ):
+    for evaluator_name, delta in sorted(comparison.evaluator_deltas.items()):
         lines.append(f"  {evaluator_name}: {delta:+.3f}")
 
     return "\n".join(lines)
+
 
 if __name__ == "__main__":
     raise SystemExit(main())

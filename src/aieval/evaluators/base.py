@@ -5,7 +5,6 @@ from aieval.result import EvaluationResult
 
 
 class Evaluator(Protocol):
-
     name: str
 
     def evaluate(

@@ -2,6 +2,7 @@ from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.summary import EvaluationSummary
 
+
 def test_evaluation_run_summary():
     results = [
         EvaluationResult(
@@ -71,6 +72,7 @@ def test_evaluation_run_summary_ignores_other_evaluators():
     assert summary.failed == 0
     assert summary.score == 1.0
     assert summary.pass_rate == 1.0
+
 
 def test_evaluation_summary_to_dict():
 

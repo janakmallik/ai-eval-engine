@@ -7,14 +7,13 @@ from datetime import datetime, timezone
 from uuid import uuid4
 import traceback
 
+
 @dataclass
 class Span:
     name: str
     span_id: str = field(default_factory=lambda: uuid4().hex)
     trace_id: str | None = None
-    started_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: datetime | None = None
     parent_span_id: str | None = None
     status: str = "unset"
@@ -54,11 +53,10 @@ class Span:
         return {
             "span_id": self.span_id,
             "name": self.name,
+            "trace_id": self.trace_id,
             "started_at": self.started_at.isoformat(),
             "ended_at": (
-                self.ended_at.isoformat()
-                if self.ended_at is not None
-                else None
+                self.ended_at.isoformat() if self.ended_at is not None else None
             ),
             "duration": self.duration,
             "parent_span_id": self.parent_span_id,
@@ -75,10 +73,39 @@ class Span:
             ],
         }
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Span":
+        started_at = datetime.fromisoformat(data["started_at"])
+        ended_at = (
+            datetime.fromisoformat(data["ended_at"])
+            if data["ended_at"] is not None
+            else None
+        )
+
+        return cls(
+            name=data["name"],
+            span_id=data["span_id"],
+            trace_id=data.get("trace_id"),
+            started_at=started_at,
+            ended_at=ended_at,
+            parent_span_id=data.get("parent_span_id"),
+            status=data.get("status", "unset"),
+            status_message=data.get("status_message"),
+            attributes=dict(data.get("attributes", {})),
+            events=[
+                {
+                    "name": event["name"],
+                    "timestamp": datetime.fromisoformat(event["timestamp"]),
+                    "attributes": dict(event.get("attributes", {})),
+                }
+                for event in data.get("events", [])
+            ],
+        )
+
     def set_attribute(self, key: str, value: object) -> None:
         self.attributes[key] = value
 
-# once a span has ended, subsequent span mutations such as adding events should be ignored.
+    # once a span has ended, subsequent span mutations such as adding events should be ignored.
     def add_event(
         self,
         name: str,

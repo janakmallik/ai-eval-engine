@@ -6,7 +6,6 @@ from aieval.result import EvaluationResult
 
 
 class ExactMatchEvaluator:
-
     name = "exact_match"
 
     def __init__(

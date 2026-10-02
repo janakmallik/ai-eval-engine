@@ -4,7 +4,6 @@ from aieval.result import EvaluationResult
 
 
 class LengthEvaluator(Evaluator):
-
     name = "length"
 
     def __init__(

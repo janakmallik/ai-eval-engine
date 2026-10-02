@@ -16,9 +16,7 @@ def test_regression_detector_detects_score_regression():
         },
     )
 
-    detector = RegressionDetector(
-        config=RegressionConfig(threshold=0.05)
-    )
+    detector = RegressionDetector(config=RegressionConfig(threshold=0.05))
 
     result = detector.check(comparison)
 
@@ -41,15 +39,14 @@ def test_regression_detector_allows_small_changes():
         },
     )
 
-    detector = RegressionDetector(
-        config=RegressionConfig(threshold=0.05)
-    )
+    detector = RegressionDetector(config=RegressionConfig(threshold=0.05))
 
     result = detector.check(comparison)
 
     assert result.regressed is False
     assert result.score_regression is False
     assert result.evaluator_regressions == []
+
 
 def test_regression_detector_uses_evaluator_specific_thresholds():
     comparison = ComparisonResult(
@@ -81,6 +78,7 @@ def test_regression_detector_uses_evaluator_specific_thresholds():
     assert result.score_regression is False
     assert result.evaluator_regressions == ["exact_match"]
 
+
 def test_regression_detector_accepts_configuration_object():
     from aieval.regression import RegressionConfig
 
@@ -99,6 +97,7 @@ def test_regression_detector_accepts_configuration_object():
         "exact_match": 0.01,
         "similarity": 0.10,
     }
+
 
 def test_regression_detector_uses_default_config():
     from aieval.regression import RegressionConfig

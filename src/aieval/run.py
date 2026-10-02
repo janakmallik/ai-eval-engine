@@ -7,6 +7,7 @@ from aieval.result import EvaluationResult
 from aieval.summary import EvaluationSummary
 from aieval.tracing.trace import Trace
 
+
 @dataclass
 class EvaluationRun:
     results: list[EvaluationResult]
@@ -56,9 +57,7 @@ class EvaluationRun:
 
     def by_evaluator(self, evaluator_name: str) -> list[EvaluationResult]:
         return [
-            result
-            for result in self.results
-            if result.evaluator_name == evaluator_name
+            result for result in self.results if result.evaluator_name == evaluator_name
         ]
 
     def summary(self, evaluator_name: str) -> EvaluationSummary:

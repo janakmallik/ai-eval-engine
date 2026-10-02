@@ -7,6 +7,7 @@ from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.tracing.trace import Trace
 
+
 def evaluate_dataset(
     model: Callable[[str], str],
     dataset: Iterable[EvalCase],
@@ -127,11 +128,7 @@ def evaluate_dataset(
         total_results = len(results)
         passed_results = sum(result.passed for result in results)
         failed_results = total_results - passed_results
-        pass_rate = (
-            passed_results / total_results
-            if total_results
-            else 0.0
-        )
+        pass_rate = passed_results / total_results if total_results else 0.0
 
         root_span.set_attribute(
             "evaluation.total_cases",

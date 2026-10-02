@@ -3,6 +3,7 @@ from dataclasses import dataclass, field
 from aieval.experiment import Experiment
 from aieval.run import EvaluationRun
 
+
 @dataclass
 class ComparisonResult:
     baseline_score: float
@@ -21,6 +22,7 @@ class ComparisonResult:
     model_version_changed: bool = False
     prompt_version_changed: bool = False
     dataset_version_changed: bool = False
+
 
 # Step by step:
 # baseline.summaries() — calls a method on baseline that presumably returns some iterable (list, dict, etc.) of "summary" objects.
@@ -41,8 +43,8 @@ def compare_runs(
     added_evaluators = current_evaluators - baseline_evaluators
     removed_evaluators = baseline_evaluators - current_evaluators
 
-# {} creates an empty dictionary.
-# you'll do something like evaluator_deltas[name] = current_score - baseline_score to record the change for each evaluator.
+    # {} creates an empty dictionary.
+    # you'll do something like evaluator_deltas[name] = current_score - baseline_score to record the change for each evaluator.
     evaluator_deltas = {}
 
     for evaluator_name in evaluator_names:
@@ -63,6 +65,7 @@ def compare_runs(
         removed_evaluators=removed_evaluators,
     )
 
+
 def compare_experiments(
     baseline: Experiment,
     current: Experiment,
@@ -79,9 +82,7 @@ def compare_experiments(
         baseline.evaluator_config != current.evaluator_config
     )
 
-    comparison.model_version_changed = (
-        baseline.model_version != current.model_version
-    )
+    comparison.model_version_changed = baseline.model_version != current.model_version
     comparison.prompt_version_changed = (
         baseline.prompt_version != current.prompt_version
     )

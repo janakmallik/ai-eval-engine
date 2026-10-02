@@ -2,7 +2,9 @@ import json
 from pathlib import Path
 
 from aieval.result import EvaluationResult
+
 from aieval.run import EvaluationRun
+from aieval.tracing.trace import Trace
 
 
 class JsonReporter:
@@ -17,12 +19,14 @@ class JsonReporter:
         input_path = Path(path)
         data = json.loads(input_path.read_text(encoding="utf-8"))
 
-        results = [
-            EvaluationResult(**result)
-            for result in data["results"]
-        ]
+        results = [EvaluationResult(**result) for result in data["results"]]
 
         return EvaluationRun(
             results=results,
             metadata=data.get("metadata", {}),
+            trace=(
+                Trace.from_dict(data["trace"])
+                if data.get("trace") is not None
+                else None
+            ),
         )

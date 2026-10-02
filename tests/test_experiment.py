@@ -3,6 +3,7 @@ from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.comparison import compare_experiments
 
+
 def test_experiment_stores_evaluation_context():
     run = EvaluationRun(
         results=[
@@ -30,6 +31,7 @@ def test_experiment_stores_evaluation_context():
     assert experiment.prompt == "Answer the question."
     assert experiment.dataset == "math-v1"
     assert experiment.run is run
+
 
 def test_experiment_to_dict():
     run = EvaluationRun(
@@ -61,6 +63,7 @@ def test_experiment_to_dict():
     assert data["dataset"] == "math-v1"
     assert data["run"] == run.to_dict()
 
+
 def test_experiment_accepts_metadata():
     run = EvaluationRun(results=[])
 
@@ -82,6 +85,7 @@ def test_experiment_accepts_metadata():
         "prompt_version": "v3",
         "dataset_version": "v2",
     }
+
 
 def test_experiment_metadata_defaults_to_independent_dicts():
     run = EvaluationRun(results=[])
@@ -106,6 +110,7 @@ def test_experiment_metadata_defaults_to_independent_dicts():
 
     assert first.metadata == {"model_version": "1.0"}
     assert second.metadata == {}
+
 
 def test_compare_experiments():
     baseline_run = EvaluationRun(
@@ -155,6 +160,7 @@ def test_compare_experiments():
     assert comparison.score_delta == -1.0
     assert comparison.pass_rate_delta == -1.0
 
+
 def test_compare_experiments_detects_no_configuration_changes():
     run = EvaluationRun(results=[])
 
@@ -180,6 +186,7 @@ def test_compare_experiments_detects_no_configuration_changes():
     assert comparison.prompt_changed is False
     assert comparison.dataset_changed is False
 
+
 def test_experiment_accepts_evaluator_configuration():
     run = EvaluationRun(results=[])
 
@@ -201,6 +208,7 @@ def test_experiment_accepts_evaluator_configuration():
 
     assert experiment.evaluator_config["exact_match"]["threshold"] == 1.0
     assert experiment.evaluator_config["similarity"]["threshold"] == 0.8
+
 
 def test_compare_experiments_tracks_evaluator_configuration_changes():
     run = EvaluationRun(results=[])
@@ -234,6 +242,7 @@ def test_compare_experiments_tracks_evaluator_configuration_changes():
     comparison = compare_experiments(baseline, current)
 
     assert comparison.evaluator_config_changed is True
+
 
 def test_experiment_to_dict_includes_configuration_and_run():
     run = EvaluationRun(
@@ -272,6 +281,7 @@ def test_experiment_to_dict_includes_configuration_and_run():
     assert data["run"]["total"] == 1
     assert data["run"]["score"] == 1.0
 
+
 def test_experiment_has_stable_id():
     run = EvaluationRun(results=[])
 
@@ -285,6 +295,7 @@ def test_experiment_has_stable_id():
 
     assert experiment.experiment_id
     assert isinstance(experiment.experiment_id, str)
+
 
 def test_identical_experiments_have_same_id():
     run = EvaluationRun(results=[])
@@ -317,6 +328,7 @@ def test_identical_experiments_have_same_id():
 
     assert baseline.experiment_id == duplicate.experiment_id
 
+
 def test_changed_experiment_configuration_has_different_id():
     run = EvaluationRun(results=[])
 
@@ -348,6 +360,7 @@ def test_changed_experiment_configuration_has_different_id():
 
     assert baseline.experiment_id != changed.experiment_id
 
+
 def test_experiment_accepts_version_metadata():
     run = EvaluationRun(results=[])
 
@@ -365,6 +378,7 @@ def test_experiment_accepts_version_metadata():
     assert experiment.model_version == "2026-09-30"
     assert experiment.prompt_version == "prompt-v3"
     assert experiment.dataset_version == "2026-09-29"
+
 
 def test_changed_version_metadata_has_different_id():
     run = EvaluationRun(results=[])
@@ -393,6 +407,7 @@ def test_changed_version_metadata_has_different_id():
 
     assert baseline.experiment_id != changed.experiment_id
 
+
 def test_experiment_to_dict_includes_version_metadata():
     run = EvaluationRun(results=[])
 
@@ -412,6 +427,7 @@ def test_experiment_to_dict_includes_version_metadata():
     assert data["model_version"] == "v2"
     assert data["prompt_version"] == "prompt-v3"
     assert data["dataset_version"] == "dataset-v5"
+
 
 def test_compare_experiments_detects_model_version_change():
     run = EvaluationRun(results=[])

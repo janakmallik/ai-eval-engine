@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
-
+from aieval.tracing.span import Span
 from aieval.tracing.trace import Trace
+
 
 def test_trace_has_id():
     trace = Trace()
@@ -51,6 +52,7 @@ def test_trace_ids_are_unique():
     second = Trace()
 
     assert first.trace_id != second.trace_id
+
 
 from aieval.tracing.span import Span
 
@@ -119,6 +121,7 @@ def test_span_parent_is_optional():
 
     assert span.parent_span_id is None
 
+
 def test_trace_starts_span():
     trace = Trace()
 
@@ -144,6 +147,7 @@ def test_trace_starts_span_without_parent():
 
     assert span.parent_span_id is None
 
+
 def test_trace_starts_child_span():
     trace = Trace()
 
@@ -155,6 +159,7 @@ def test_trace_starts_child_span():
 
     assert child.parent_span_id == parent.span_id
     assert child in trace.spans
+
 
 def test_trace_to_dict_includes_trace_identity():
     trace = Trace()
@@ -194,6 +199,7 @@ def test_trace_to_dict_includes_duration():
 
     assert data["duration"] is not None
 
+
 def test_trace_starts_child_span_from_parent():
     trace = Trace()
 
@@ -223,6 +229,7 @@ def test_trace_supports_nested_span_hierarchy():
     assert retrieval.parent_span_id == request.span_id
     assert reranking.parent_span_id == retrieval.span_id
 
+
 def test_span_stores_attributes():
     trace = Trace()
 
@@ -238,6 +245,7 @@ def test_span_stores_attributes():
         "document_count": 5,
     }
 
+
 def test_span_updates_existing_attribute():
     trace = Trace()
 
@@ -247,6 +255,7 @@ def test_span_updates_existing_attribute():
     span.set_attribute("model", "model-v2")
 
     assert span.attributes["model"] == "model-v2"
+
 
 # want to prove that two spans don't accidentally share the same attributes dictionary.
 def test_spans_have_independent_attributes():
@@ -261,6 +270,7 @@ def test_spans_have_independent_attributes():
         "model": "embedding-model",
     }
     assert second.attributes == {}
+
 
 # confirms the Span itself now serializes its attributes correctly.
 def test_span_to_dict_includes_attributes():
@@ -277,6 +287,7 @@ def test_span_to_dict_includes_attributes():
         "document_count": 5,
     }
 
+
 # spans carry attributes and parent/child relationships
 def test_trace_to_dict_includes_span_attributes():
     trace = Trace()
@@ -289,6 +300,7 @@ def test_trace_to_dict_includes_span_attributes():
     assert data["spans"][0]["attributes"] == {
         "model": "embedding-model",
     }
+
 
 # attributes are preserved when the span is nested.
 # last test passing means the span metadata layer is now behaving correctly:
@@ -304,14 +316,14 @@ def test_child_span_to_dict_includes_parent_and_attributes():
     data = trace.to_dict()
 
     child_data = next(
-        span for span in data["spans"]
-        if span["span_id"] == child.span_id
+        span for span in data["spans"] if span["span_id"] == child.span_id
     )
 
     assert child_data["parent_span_id"] == parent.span_id
     assert child_data["attributes"] == {
         "model": "embedding-model",
     }
+
 
 def test_span_adds_event():
     trace = Trace()
@@ -322,6 +334,7 @@ def test_span_adds_event():
 
     assert len(span.events) == 1
     assert span.events[0]["name"] == "cache_miss"
+
 
 def test_span_adds_event_with_attributes():
     trace = Trace()
@@ -342,6 +355,7 @@ def test_span_adds_event_with_attributes():
         "key": "user:123",
     }
 
+
 def test_span_event_without_attributes_uses_empty_dict():
     trace = Trace()
 
@@ -350,6 +364,7 @@ def test_span_event_without_attributes_uses_empty_dict():
     span.add_event("cache_miss")
 
     assert span.events[0]["attributes"] == {}
+
 
 def test_span_to_dict_serializes_event_timestamp():
     trace = Trace()
@@ -360,6 +375,7 @@ def test_span_to_dict_serializes_event_timestamp():
     data = span.to_dict()
 
     assert isinstance(data["events"][0]["timestamp"], str)
+
 
 def test_span_to_dict_includes_complete_event():
     trace = Trace()
@@ -384,6 +400,7 @@ def test_span_to_dict_includes_complete_event():
         "key": "user:123",
     }
 
+
 def test_span_preserves_event_order():
     trace = Trace()
 
@@ -398,6 +415,7 @@ def test_span_preserves_event_order():
         "vector_search",
         "documents_found",
     ]
+
 
 def test_span_to_dict_preserves_event_order():
     trace = Trace()
@@ -415,6 +433,7 @@ def test_span_to_dict_preserves_event_order():
         "vector_search",
         "documents_found",
     ]
+
 
 # make sure each event keeps its own attributes and doesn't accidentally share the same dictionary.
 def test_span_events_have_independent_attributes():
@@ -437,6 +456,7 @@ def test_span_events_have_independent_attributes():
     assert span.events[1]["attributes"] == {
         "index": "documents",
     }
+
 
 # verify the entire list of events survives serialization correctly.
 def test_span_to_dict_preserves_event_attributes():
@@ -471,6 +491,7 @@ def test_span_to_dict_preserves_event_attributes():
         "top_k": 5,
     }
 
+
 # protect span mutation after end()
 # Once a span has ended, we shouldn't keep modifying it.
 def test_span_cannot_add_event_after_end():
@@ -483,12 +504,14 @@ def test_span_cannot_add_event_after_end():
 
     assert span.events == []
 
+
 def test_span_status_defaults_to_unset():
     trace = Trace()
 
     span = trace.start_span("retrieval")
 
     assert span.status == "unset"
+
 
 def test_span_status_can_be_updated():
     trace = Trace()
@@ -498,6 +521,7 @@ def test_span_status_can_be_updated():
     span.set_status("ok")
 
     assert span.status == "ok"
+
 
 def test_span_to_dict_includes_status():
     trace = Trace()
@@ -509,6 +533,7 @@ def test_span_to_dict_includes_status():
 
     assert data["status"] == "ok"
 
+
 def test_span_error_status_stores_message():
     trace = Trace()
 
@@ -518,6 +543,7 @@ def test_span_error_status_stores_message():
 
     assert span.status == "error"
     assert span.status_message == "vector database unavailable"
+
 
 def test_span_to_dict_includes_status_message():
     trace = Trace()
@@ -529,6 +555,7 @@ def test_span_to_dict_includes_status_message():
 
     assert data["status"] == "error"
     assert data["status_message"] == "vector database unavailable"
+
 
 def test_span_cannot_change_status_after_end():
     trace = Trace()
@@ -542,6 +569,7 @@ def test_span_cannot_change_status_after_end():
     assert span.status == "ok"
     assert span.status_message is None
 
+
 def test_span_end_preserves_status():
     trace = Trace()
 
@@ -553,6 +581,7 @@ def test_span_end_preserves_status():
     assert span.status == "ok"
     assert span.status_message is None
 
+
 def test_span_context_manager_ends_span():
     trace = Trace()
 
@@ -560,6 +589,7 @@ def test_span_context_manager_ends_span():
         assert span.ended_at is None
 
     assert span.ended_at is not None
+
 
 # verify it also ends when an exception occurs
 def test_span_context_manager_ends_span_on_exception():
@@ -575,6 +605,7 @@ def test_span_context_manager_ends_span_on_exception():
 
     assert span.ended_at is not None
 
+
 # automatically mark exceptions as errors
 def test_span_context_manager_marks_exception_as_error():
     trace = Trace()
@@ -589,6 +620,7 @@ def test_span_context_manager_marks_exception_as_error():
 
     assert span.status == "error"
     assert span.status_message == "retrieval failed"
+
 
 # preserve an explicitly set error status
 def test_span_context_manager_preserves_existing_error_status():
@@ -606,6 +638,7 @@ def test_span_context_manager_preserves_existing_error_status():
     assert span.status == "error"
     assert span.status_message == "database timeout"
 
+
 def test_span_records_exception():
     trace = Trace()
 
@@ -617,6 +650,7 @@ def test_span_records_exception():
         span.record_exception(exc)
 
     assert len(span.events) == 1
+
 
 def test_span_records_exception_details():
     trace = Trace()
@@ -635,6 +669,7 @@ def test_span_records_exception_details():
     assert event["attributes"]["exception.message"] == "vector database unavailable"
     assert event["attributes"]["exception.stacktrace"]
 
+
 # exception event timestamp
 # verify that record_exception() also records when the exception happened.
 def test_span_records_exception_timestamp():
@@ -650,6 +685,7 @@ def test_span_records_exception_timestamp():
     event = span.events[0]
 
     assert isinstance(event["timestamp"], datetime)
+
 
 # capture the stack trace
 # observability feature rather than just another field. When an AI/RAG operation
@@ -668,7 +704,11 @@ def test_span_records_exception_stacktrace():
     event = span.events[0]
 
     assert "exception.stacktrace" in event["attributes"]
-    assert "ValueError: vector database unavailable" in event["attributes"]["exception.stacktrace"]
+    assert (
+        "ValueError: vector database unavailable"
+        in event["attributes"]["exception.stacktrace"]
+    )
+
 
 # don't allow exceptions after span end
 # because we already established that a finished span is immutable.
@@ -684,6 +724,7 @@ def test_span_cannot_record_exception_after_end():
         span.record_exception(exc)
 
     assert span.events == []
+
 
 # multiple exceptions, A real RAG/agent span could potentially encounter and record
 # more than one exception event.
@@ -708,6 +749,7 @@ def test_span_can_record_multiple_exceptions():
     assert span.events[1]["attributes"]["exception.type"] == "TimeoutError"
     assert span.events[1]["attributes"]["exception.message"] == "second failure"
 
+
 # serialize exception events, We've tested the in-memory representation. Now let's
 # make sure the exception information survives to_dict().
 def test_span_to_dict_preserves_exception_details():
@@ -726,10 +768,9 @@ def test_span_to_dict_preserves_exception_details():
 
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
-    assert event["attributes"]["exception.message"] == (
-        "vector database unavailable"
-    )
+    assert event["attributes"]["exception.message"] == ("vector database unavailable")
     assert "exception.stacktrace" in event["attributes"]
+
 
 # automatic exception recording from the context manager
 def test_span_context_manager_records_exception():
@@ -751,6 +792,7 @@ def test_span_context_manager_records_exception():
     assert event["attributes"]["exception.type"] == "ValueError"
     assert event["attributes"]["exception.message"] == "retrieval failed"
 
+
 # context manager preserves the exception event, We already tested that it records
 # the event. Now make sure ending the span doesn't accidentally remove or mutate it.
 def test_span_context_manager_preserves_exception_event_after_end():
@@ -771,6 +813,7 @@ def test_span_context_manager_preserves_exception_event_after_end():
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
     assert event["attributes"]["exception.message"] == "retrieval failed"
+
 
 # exception event + status together, already tested both separately. Now let's lock
 # down the complete behavior of the context manager.
@@ -794,10 +837,9 @@ def test_span_context_manager_records_exception_and_error_status():
 
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
-    assert event["attributes"]["exception.message"] == (
-        "vector database unavailable"
-    )
+    assert event["attributes"]["exception.message"] == ("vector database unavailable")
     assert "exception.stacktrace" in event["attributes"]
+
 
 # handled inside span
 # record_exception()
@@ -813,13 +855,12 @@ def test_span_does_not_record_handled_exception_twice():
             try:
                 raise ValueError("temporary failure")
             except ValueError:
-                span.record_exception(
-                    ValueError("temporary failure")
-                )
+                span.record_exception(ValueError("temporary failure"))
     except ValueError:
         pass
 
     assert len(span.events) == 1
+
 
 def test_span_records_exception_and_marks_error():
     span = Span(name="evaluator.exploding")
@@ -840,3 +881,87 @@ def test_span_records_exception_and_marks_error():
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "RuntimeError"
     assert event["attributes"]["exception.message"] == "evaluator crashed"
+
+
+def test_trace_can_be_restored_from_dict():
+    trace = Trace()
+    data = trace.to_dict()
+
+    restored = Trace.from_dict(data)
+
+    assert restored.trace_id == trace.trace_id
+    assert restored.started_at == trace.started_at
+    assert restored.ended_at == trace.ended_at
+    assert restored.spans == []
+
+
+def test_trace_can_be_restored_with_spans():
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_attribute("component", "vector_db")
+    span.end()
+
+    data = trace.to_dict()
+
+    restored = Trace.from_dict(data)
+
+    assert len(restored.spans) == 1
+
+    restored_span = restored.spans[0]
+
+    assert restored_span.span_id == span.span_id
+    assert restored_span.trace_id == span.trace_id
+    assert restored_span.name == "retrieval"
+    assert restored_span.attributes["component"] == "vector_db"
+    assert restored_span.ended_at == span.ended_at
+
+
+def test_span_can_be_restored_from_dict():
+    trace = Trace()
+
+    span = trace.start_span(
+        "retrieval",
+        parent_span_id="parent-123",
+    )
+    span.set_attribute("component", "vector_db")
+    span.set_status("ok")
+    span.end()
+
+    data = span.to_dict()
+
+    restored = Span.from_dict(data)
+
+    assert restored.span_id == span.span_id
+    assert restored.name == span.name
+    assert restored.trace_id == span.trace_id
+    assert restored.started_at == span.started_at
+    assert restored.ended_at == span.ended_at
+    assert restored.parent_span_id == span.parent_span_id
+    assert restored.status == span.status
+    assert restored.status_message == span.status_message
+    assert restored.attributes == span.attributes
+    assert restored.events == span.events
+
+
+def test_span_can_restore_events_from_dict():
+    span = Span(name="retrieval")
+
+    span.add_event(
+        "cache.miss",
+        attributes={
+            "key": "embedding:123",
+        },
+    )
+
+    data = span.to_dict()
+
+    restored = Span.from_dict(data)
+
+    assert len(restored.events) == 1
+
+    event = restored.events[0]
+
+    assert event["name"] == "cache.miss"
+    assert event["attributes"]["key"] == "embedding:123"
+    assert event["timestamp"] == span.events[0]["timestamp"]

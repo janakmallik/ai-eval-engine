@@ -9,12 +9,12 @@ class RegressionResult:
     score_regression: bool
     evaluator_regressions: list[str]
 
+
 @dataclass
 class RegressionConfig:
     threshold: float = 0.0
-    evaluator_thresholds: dict[str, float] = field(
-        default_factory=dict
-    )
+    evaluator_thresholds: dict[str, float] = field(default_factory=dict)
+
 
 class RegressionDetector:
     def __init__(self, config: RegressionConfig | None = None):

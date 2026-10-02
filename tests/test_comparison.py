@@ -56,6 +56,7 @@ def test_compare_runs():
     assert comparison.current_pass_rate == 0.5
     assert comparison.pass_rate_delta == -0.5
 
+
 def test_compare_runs_by_evaluator():
     baseline = EvaluationRun(
         results=[
@@ -103,6 +104,7 @@ def test_compare_runs_by_evaluator():
 
     assert comparison.evaluator_deltas["exact_match"] == -1.0
     assert comparison.evaluator_deltas["similarity"] == 0.0
+
 
 def test_compare_runs_handles_added_evaluator():
     baseline = EvaluationRun(

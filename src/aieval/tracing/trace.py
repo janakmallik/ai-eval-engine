@@ -12,9 +12,7 @@ from aieval.tracing.span import Span
 @dataclass
 class Trace:
     trace_id: str = field(default_factory=lambda: uuid4().hex)
-    started_at: datetime = field(
-        default_factory=lambda: datetime.now(timezone.utc)
-    )
+    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     ended_at: datetime | None = None
     spans: list[Span] = field(default_factory=list)
 
@@ -52,10 +50,24 @@ class Trace:
             "trace_id": self.trace_id,
             "started_at": self.started_at.isoformat(),
             "ended_at": (
-                self.ended_at.isoformat()
-                if self.ended_at is not None
-                else None
+                self.ended_at.isoformat() if self.ended_at is not None else None
             ),
             "duration": self.duration,
             "spans": [span.to_dict() for span in self.spans],
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Trace":
+        started_at = datetime.fromisoformat(data["started_at"])
+        ended_at = (
+            datetime.fromisoformat(data["ended_at"])
+            if data["ended_at"] is not None
+            else None
+        )
+
+        return cls(
+            trace_id=data["trace_id"],
+            started_at=started_at,
+            ended_at=ended_at,
+            spans=[Span.from_dict(span) for span in data.get("spans", [])],
+        )

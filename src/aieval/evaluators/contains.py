@@ -3,7 +3,6 @@ from aieval.result import EvaluationResult
 
 
 class ContainsEvaluator:
-
     name = "contains"
 
     def evaluate(

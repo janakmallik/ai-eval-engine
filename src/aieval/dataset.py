@@ -19,14 +19,12 @@ class EvalDataset:
 
     def __getitem__(self, index: int) -> EvalCase:
         return self.cases[index]
-    
+
     @classmethod
     def from_json(cls, path: str | Path) -> "EvalDataset":
         input_path = Path(path)
 
-        data = json.loads(
-            input_path.read_text(encoding="utf-8")
-        )
+        data = json.loads(input_path.read_text(encoding="utf-8"))
 
         if not isinstance(data, list):
             raise ValueError("Dataset JSON must contain a list of cases")
@@ -40,9 +38,7 @@ class EvalDataset:
             required_fields = {"id", "input", "expected"}
 
             if not required_fields.issubset(item):
-                raise ValueError(
-                    "Each dataset case must contain: id, input, expected"
-                )
+                raise ValueError("Each dataset case must contain: id, input, expected")
 
             cases.append(EvalCase(**item))
 

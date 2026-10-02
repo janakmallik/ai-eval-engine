@@ -7,6 +7,7 @@ from aieval.runner import evaluate_dataset
 from aieval.evaluators.length import LengthEvaluator
 from aieval.result import EvaluationResult
 
+
 def test_evaluate_dataset():
 
     dataset = [
@@ -107,6 +108,7 @@ def test_runner_accepts_different_evaluator():
     assert run.failed == 0
     assert run.score == 1.0
 
+
 def test_runner_accepts_multiple_evaluators():
 
     dataset = [
@@ -132,6 +134,7 @@ def test_runner_accepts_multiple_evaluators():
     assert run.total == 2
     assert run.passed == 2
     assert run.failed == 0
+
 
 def test_runner_attaches_metadata():
 
@@ -160,6 +163,7 @@ def test_runner_attaches_metadata():
 
     assert run.metadata == metadata
 
+
 def test_runner_defaults_to_empty_metadata():
 
     dataset = [
@@ -180,6 +184,7 @@ def test_runner_defaults_to_empty_metadata():
     )
 
     assert run.metadata == {}
+
 
 def test_runner_accepts_eval_dataset():
 
@@ -217,6 +222,7 @@ def test_runner_accepts_eval_dataset():
     assert run.failed == 0
     assert run.score == 1.0
 
+
 # don't want to suddenly make every evaluation create traces. That's an architectural
 # decision we'll test explicitly.
 def test_evaluate_dataset_can_enable_tracing():
@@ -242,6 +248,7 @@ def test_evaluate_dataset_can_enable_tracing():
 
     assert run.trace is not None
 
+
 def test_evaluate_dataset_tracing_defaults_to_disabled():
     dataset = [
         EvalCase(
@@ -263,6 +270,7 @@ def test_evaluate_dataset_tracing_defaults_to_disabled():
     )
 
     assert run.trace is None
+
 
 def test_evaluate_dataset_creates_root_trace_span():
     dataset = [
@@ -291,6 +299,7 @@ def test_evaluate_dataset_creates_root_trace_span():
     assert root_span.name == "evaluation"
     assert root_span.parent_span_id is None
 
+
 def test_evaluate_dataset_ends_root_trace_span():
     dataset = [
         EvalCase(
@@ -317,6 +326,7 @@ def test_evaluate_dataset_ends_root_trace_span():
 
     assert root_span.name == "evaluation"
     assert root_span.ended_at is not None
+
 
 def test_evaluate_dataset_creates_case_span():
     dataset = [
@@ -346,6 +356,7 @@ def test_evaluate_dataset_creates_case_span():
     assert case_span.name == "evaluation.case"
     assert case_span.parent_span_id == root_span.span_id
 
+
 def test_evaluate_dataset_ends_case_span():
     dataset = [
         EvalCase(
@@ -371,6 +382,7 @@ def test_evaluate_dataset_ends_case_span():
     case_span = run.trace.spans[1]
 
     assert case_span.ended_at is not None
+
 
 def test_evaluate_dataset_creates_model_span():
     dataset = [
@@ -400,6 +412,7 @@ def test_evaluate_dataset_creates_model_span():
     assert model_span.name == "model"
     assert model_span.parent_span_id == case_span.span_id
 
+
 def test_evaluate_dataset_ends_model_span():
     dataset = [
         EvalCase(
@@ -426,6 +439,7 @@ def test_evaluate_dataset_ends_model_span():
 
     assert model_span.name == "model"
     assert model_span.ended_at is not None
+
 
 def test_evaluate_dataset_model_exception_marks_model_span_error():
     dataset = [
@@ -454,6 +468,7 @@ def test_evaluate_dataset_model_exception_marks_model_span_error():
     # The current implementation does not return the run after
     # the exception, so this test will initially need us to decide
     # how failed runs expose their trace.
+
 
 def test_evaluate_dataset_ends_case_span_after_all_evaluators():
     dataset = [
@@ -484,6 +499,7 @@ def test_evaluate_dataset_ends_case_span_after_all_evaluators():
 
     assert case_span.ended_at is not None
 
+
 def test_evaluate_dataset_model_exception_records_exception_event():
     dataset = [
         EvalCase(
@@ -510,6 +526,7 @@ def test_evaluate_dataset_model_exception_records_exception_event():
 
     # We cannot inspect the run because the exception propagates.
 
+
 def test_evaluate_dataset_propagates_model_exception():
     dataset = [
         EvalCase(
@@ -531,6 +548,7 @@ def test_evaluate_dataset_propagates_model_exception():
             evaluators=[evaluator],
             enable_tracing=True,
         )
+
 
 def test_evaluate_dataset_creates_evaluator_span():
     dataset = [
@@ -556,6 +574,7 @@ def test_evaluate_dataset_creates_evaluator_span():
     assert run.trace is not None
     assert len(run.trace.spans) == 4
 
+
 def test_evaluate_dataset_evaluator_exception_ends_evaluator_span():
     dataset = [
         EvalCase(
@@ -579,6 +598,7 @@ def test_evaluate_dataset_evaluator_exception_ends_evaluator_span():
             evaluators=[FailingEvaluator()],
             enable_tracing=True,
         )
+
 
 def test_evaluate_dataset_evaluator_span_contains_evaluator_name():
     dataset = [
@@ -606,6 +626,7 @@ def test_evaluate_dataset_evaluator_span_contains_evaluator_name():
     evaluator_span = run.trace.spans[3]
 
     assert evaluator_span.name == "evaluator.exact_match"
+
 
 def test_evaluate_dataset_evaluator_span_contains_result_attributes():
     dataset = [
@@ -636,6 +657,7 @@ def test_evaluate_dataset_evaluator_span_contains_result_attributes():
     assert evaluator_span.attributes["evaluation.score"] == 1.0
     assert evaluator_span.attributes["evaluation.passed"] is True
 
+
 def test_evaluate_dataset_model_span_is_ok_after_success():
     dataset = [
         EvalCase(
@@ -660,6 +682,7 @@ def test_evaluate_dataset_model_span_is_ok_after_success():
     model_span = run.trace.spans[2]
 
     assert model_span.status == "ok"
+
 
 def test_evaluate_dataset_model_span_contains_result_attributes():
     dataset = [
@@ -686,6 +709,7 @@ def test_evaluate_dataset_model_span_contains_result_attributes():
 
     assert model_span.attributes["model.input"] == "hello"
     assert model_span.attributes["model.output"] == "HELLO"
+
 
 def test_evaluate_dataset_case_span_contains_case_attributes():
     dataset = [
@@ -714,6 +738,7 @@ def test_evaluate_dataset_case_span_contains_case_attributes():
     assert case_span.attributes["case.input"] == "hello"
     assert case_span.attributes["case.expected"] == "hello"
 
+
 def test_evaluate_dataset_evaluator_span_is_error_after_exception():
     dataset = [
         EvalCase(
@@ -737,6 +762,7 @@ def test_evaluate_dataset_evaluator_span_is_error_after_exception():
             evaluators=[FailingEvaluator()],
             enable_tracing=True,
         )
+
 
 def test_evaluate_dataset_evaluator_span_contains_case_id():
     dataset = [
@@ -763,6 +789,7 @@ def test_evaluate_dataset_evaluator_span_contains_case_id():
 
     assert evaluator_span.attributes["evaluation.case_id"] == "1"
 
+
 def test_evaluate_dataset_case_span_contains_evaluation_outcome():
     dataset = [
         EvalCase(
@@ -787,6 +814,7 @@ def test_evaluate_dataset_case_span_contains_evaluation_outcome():
     case_span = run.trace.spans[1]
 
     assert case_span.attributes["evaluation.passed"] is True
+
 
 def test_evaluate_dataset_case_span_is_false_when_evaluator_fails():
     dataset = [
@@ -826,6 +854,7 @@ def test_evaluate_dataset_case_span_is_false_when_evaluator_fails():
 
     assert case_span.attributes["evaluation.passed"] is False
 
+
 def test_evaluate_dataset_root_span_contains_run_attributes():
     dataset = [
         EvalCase(
@@ -854,6 +883,7 @@ def test_evaluate_dataset_root_span_contains_run_attributes():
     assert root_span.attributes["evaluation.passed"] == 1
     assert root_span.attributes["evaluation.failed"] == 0
     assert root_span.attributes["evaluation.pass_rate"] == 1.0
+
 
 def test_evaluate_dataset_root_span_contains_case_outcome_counts():
     dataset = [
@@ -886,6 +916,7 @@ def test_evaluate_dataset_root_span_contains_case_outcome_counts():
     assert root_span.attributes["evaluation.total_cases"] == 2
     assert root_span.attributes["evaluation.passed_cases"] == 1
     assert root_span.attributes["evaluation.failed_cases"] == 1
+
 
 def test_evaluate_dataset_evaluator_span_records_exception():
     dataset = [

@@ -4,6 +4,7 @@ from aieval.reporting.json import JsonReporter
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 
+
 def test_json_reporter_renders_evaluation_run():
     results = [
         EvaluationResult(
@@ -112,6 +113,7 @@ def test_json_reporter_writes_file(tmp_path):
         "trace": None,
     }
 
+
 def test_json_reporter_reads_evaluation_run(tmp_path):
     run = EvaluationRun(
         results=[
@@ -135,3 +137,44 @@ def test_json_reporter_reads_evaluation_run(tmp_path):
     loaded = reporter.read(path)
 
     assert loaded == run
+
+
+def test_json_reporter_reads_evaluation_run_with_trace(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    span = trace.start_span("retrieval")
+    span.set_attribute("component", "vector_db")
+    span.add_event(
+        "cache.miss",
+        attributes={"key": "embedding:123"},
+    )
+    span.end()
+
+    run = EvaluationRun(
+        results=[],
+        metadata={"model": "test-model"},
+        trace=trace,
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "run.json"
+    reporter.write(run, path)
+
+    loaded = reporter.read(path)
+
+    assert loaded.trace is not None
+    assert loaded.trace.trace_id == trace.trace_id
+    assert len(loaded.trace.spans) == 1
+
+    loaded_span = loaded.trace.spans[0]
+
+    assert loaded_span.span_id == span.span_id
+    assert loaded_span.name == "retrieval"
+    assert loaded_span.attributes["component"] == "vector_db"
+
+    assert len(loaded_span.events) == 1
+    assert loaded_span.events[0]["name"] == "cache.miss"
+    assert loaded_span.events[0]["attributes"]["key"] == "embedding:123"

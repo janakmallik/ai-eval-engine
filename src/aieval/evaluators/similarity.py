@@ -6,7 +6,6 @@ from aieval.result import EvaluationResult
 
 
 class SimilarityEvaluator:
-
     def __init__(
         self,
         threshold: float = 0.8,
