@@ -123,6 +123,16 @@ class Span:
             input_tokens + output_tokens,
         )
 
+
+    def record_cost(
+        self,
+        input_cost: float,
+        output_cost: float,
+    ) -> None:
+        self.set_attribute("model.input_cost", input_cost)
+        self.set_attribute("model.output_cost", output_cost)
+        self.set_attribute("model.total_cost", input_cost + output_cost)
+
     def record_retrieval_result(self, result_count: int) -> None:
         self.set_attribute("retrieval.result_count", result_count)
 

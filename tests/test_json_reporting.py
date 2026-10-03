@@ -379,6 +379,7 @@ def test_json_reporter_includes_trace_summary(tmp_path):
         "duration": trace.duration,
         "completed_span_count": 2,
         "total_duration": 0.0,
+        "total_cost": 0.0,
         "spans": [
             {
                 "span_id": root.span_id,

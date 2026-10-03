@@ -41,12 +41,16 @@ class Trace:
 
     def summary(self) -> dict:
         durations = [span.duration for span in self.spans if span.duration is not None]
+        total_cost = sum(
+            span.attributes.get("model.total_cost", 0.0) for span in self.spans
+        )
 
         return {
             "trace_id": self.trace_id,
             "span_count": len(self.spans),
             "error_count": sum(span.status == "error" for span in self.spans),
             "duration": self.duration,
+            "total_cost": total_cost,
             "completed_span_count": sum(
                 span.ended_at is not None for span in self.spans
             ),

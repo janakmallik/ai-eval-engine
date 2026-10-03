@@ -1669,3 +1669,87 @@ def test_model_token_usage_round_trips():
     assert restored.attributes["model.input_tokens"] == 100
     assert restored.attributes["model.output_tokens"] == 50
     assert restored.attributes["model.total_tokens"] == 150
+
+
+def test_model_span_can_record_cost():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_cost(
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+
+    assert model.attributes["model.input_cost"] == 0.001
+    assert model.attributes["model.output_cost"] == 0.002
+    assert model.attributes["model.total_cost"] == 0.003
+
+
+def test_model_cost_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_cost(
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+
+    restored = Span.from_dict(model.to_dict())
+
+    assert restored.attributes["model.input_cost"] == 0.001
+    assert restored.attributes["model.output_cost"] == 0.002
+    assert restored.attributes["model.total_cost"] == 0.003
+
+
+def test_trace_summary_includes_total_cost():
+    trace = Trace()
+
+    model_1 = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+    model_1.record_cost(
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+    model_1.end()
+
+    model_2 = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+    model_2.record_cost(
+        input_cost=0.003,
+        output_cost=0.004,
+    )
+    model_2.end()
+
+    trace.end()
+
+    summary = trace.summary()
+
+    assert summary["total_cost"] == 0.010
+
+
+def test_trace_summary_total_cost_is_zero_without_costs():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+    model.end()
+
+    trace.end()
+
+    summary = trace.summary()
+
+    assert summary["total_cost"] == 0.0
