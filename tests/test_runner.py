@@ -66,7 +66,8 @@ def test_runner_with_contains_evaluator():
 
     def fake_model(question: str) -> str:
         answers = {
-            "What is the capital of France?": "Paris is the capital of France.",
+            "What is the capital of France?":
+            "Paris is the capital of France.",
             "Tell me about Paris.": "Paris is a city in France.",
         }
 
@@ -188,20 +189,18 @@ def test_runner_defaults_to_empty_metadata():
 
 def test_runner_accepts_eval_dataset():
 
-    dataset = EvalDataset(
-        cases=[
-            EvalCase(
-                id="001",
-                input="What is 2 + 2?",
-                expected="4",
-            ),
-            EvalCase(
-                id="002",
-                input="What is 3 + 3?",
-                expected="6",
-            ),
-        ]
-    )
+    dataset = EvalDataset(cases=[
+        EvalCase(
+            id="001",
+            input="What is 2 + 2?",
+            expected="4",
+        ),
+        EvalCase(
+            id="002",
+            input="What is 3 + 3?",
+            expected="6",
+        ),
+    ])
 
     def fake_model(question: str) -> str:
         answers = {
@@ -226,13 +225,11 @@ def test_runner_accepts_eval_dataset():
 # don't want to suddenly make every evaluation create traces. That's an architectural
 # decision we'll test explicitly.
 def test_evaluate_dataset_can_enable_tracing():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -250,13 +247,11 @@ def test_evaluate_dataset_can_enable_tracing():
 
 
 def test_evaluate_dataset_tracing_defaults_to_disabled():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -273,13 +268,11 @@ def test_evaluate_dataset_tracing_defaults_to_disabled():
 
 
 def test_evaluate_dataset_creates_root_trace_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -301,13 +294,11 @@ def test_evaluate_dataset_creates_root_trace_span():
 
 
 def test_evaluate_dataset_ends_root_trace_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -329,13 +320,11 @@ def test_evaluate_dataset_ends_root_trace_span():
 
 
 def test_evaluate_dataset_creates_case_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -358,13 +347,11 @@ def test_evaluate_dataset_creates_case_span():
 
 
 def test_evaluate_dataset_ends_case_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -385,13 +372,11 @@ def test_evaluate_dataset_ends_case_span():
 
 
 def test_evaluate_dataset_creates_model_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -414,13 +399,11 @@ def test_evaluate_dataset_creates_model_span():
 
 
 def test_evaluate_dataset_ends_model_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -442,13 +425,11 @@ def test_evaluate_dataset_ends_model_span():
 
 
 def test_evaluate_dataset_model_exception_marks_model_span_error():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         raise ValueError("model failed")
@@ -471,13 +452,11 @@ def test_evaluate_dataset_model_exception_marks_model_span_error():
 
 
 def test_evaluate_dataset_ends_case_span_after_all_evaluators():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -501,13 +480,11 @@ def test_evaluate_dataset_ends_case_span_after_all_evaluators():
 
 
 def test_evaluate_dataset_model_exception_records_exception_event():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         raise ValueError("model failed")
@@ -528,13 +505,11 @@ def test_evaluate_dataset_model_exception_records_exception_event():
 
 
 def test_evaluate_dataset_propagates_model_exception():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         raise ValueError("model failed")
@@ -551,13 +526,11 @@ def test_evaluate_dataset_propagates_model_exception():
 
 
 def test_evaluate_dataset_creates_evaluator_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -576,18 +549,17 @@ def test_evaluate_dataset_creates_evaluator_span():
 
 
 def test_evaluate_dataset_evaluator_exception_ends_evaluator_span():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
 
     class FailingEvaluator:
+
         def evaluate(self, context):
             raise ValueError("evaluation failed")
 
@@ -601,13 +573,11 @@ def test_evaluate_dataset_evaluator_exception_ends_evaluator_span():
 
 
 def test_evaluate_dataset_evaluator_span_contains_evaluator_name():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -629,13 +599,11 @@ def test_evaluate_dataset_evaluator_span_contains_evaluator_name():
 
 
 def test_evaluate_dataset_evaluator_span_contains_result_attributes():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -659,13 +627,11 @@ def test_evaluate_dataset_evaluator_span_contains_result_attributes():
 
 
 def test_evaluate_dataset_model_span_is_ok_after_success():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -685,13 +651,11 @@ def test_evaluate_dataset_model_span_is_ok_after_success():
 
 
 def test_evaluate_dataset_model_span_contains_result_attributes():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text.upper()
@@ -712,13 +676,11 @@ def test_evaluate_dataset_model_span_contains_result_attributes():
 
 
 def test_evaluate_dataset_case_span_contains_case_attributes():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -740,18 +702,17 @@ def test_evaluate_dataset_case_span_contains_case_attributes():
 
 
 def test_evaluate_dataset_evaluator_span_is_error_after_exception():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
 
     class FailingEvaluator:
+
         def evaluate(self, context):
             raise ValueError("evaluation failed")
 
@@ -765,13 +726,11 @@ def test_evaluate_dataset_evaluator_span_is_error_after_exception():
 
 
 def test_evaluate_dataset_evaluator_span_contains_case_id():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -791,13 +750,11 @@ def test_evaluate_dataset_evaluator_span_contains_case_id():
 
 
 def test_evaluate_dataset_case_span_contains_evaluation_outcome():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -817,13 +774,11 @@ def test_evaluate_dataset_case_span_contains_evaluation_outcome():
 
 
 def test_evaluate_dataset_case_span_is_false_when_evaluator_fails():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -856,13 +811,11 @@ def test_evaluate_dataset_case_span_is_false_when_evaluator_fails():
 
 
 def test_evaluate_dataset_root_span_contains_run_attributes():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -919,13 +872,11 @@ def test_evaluate_dataset_root_span_contains_case_outcome_counts():
 
 
 def test_evaluate_dataset_evaluator_span_records_exception():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="hello",
-            expected="hello",
-        )
-    ]
+    dataset = [EvalCase(
+        id="1",
+        input="hello",
+        expected="hello",
+    )]
 
     def model(text):
         return text
@@ -965,4 +916,110 @@ def test_evaluate_dataset_propagates_model_failure():
             dataset=dataset,
             evaluators=[],
             enable_tracing=True,
+        )
+
+
+def test_evaluate_dataset_traces_retrieval():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        return [
+            "Gradient descent is an optimization algorithm.",
+            "It is commonly used to train machine learning models.",
+        ]
+
+    def model(text):
+        return "Gradient descent"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+    )
+
+    assert run.trace is not None
+
+    retrieval_spans = [
+        span for span in run.trace.spans if span.name == "retrieval"
+    ]
+
+    assert len(retrieval_spans) == 1
+
+    retrieval_span = retrieval_spans[0]
+
+    assert retrieval_span.attributes["retrieval.query"] == (
+        "What is gradient descent?")
+    assert retrieval_span.attributes["retrieval.top_k"] == 5
+    assert retrieval_span.attributes["retrieval.result_count"] == 2
+    assert retrieval_span.ended_at is not None
+
+
+def test_evaluate_dataset_retrieval_span_records_result_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        return [
+            "Gradient descent is an optimization algorithm.",
+            "It is commonly used to train machine learning models.",
+            "Gradient descent minimizes a loss function.",
+        ]
+
+    def model(text):
+        return "Gradient descent"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+        retrieval_top_k=5,
+    )
+
+    assert run.trace is not None
+
+    retrieval_spans = [
+        span for span in run.trace.spans if span.name == "retrieval"
+    ]
+
+    assert len(retrieval_spans) == 1
+    assert retrieval_spans[0].attributes["retrieval.result_count"] == 3
+
+
+def test_evaluate_dataset_retrieval_span_records_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        raise RuntimeError("retrieval failed")
+
+    def model(text):
+        return "Gradient descent"
+
+    with pytest.raises(RuntimeError, match="retrieval failed"):
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[],
+            enable_tracing=True,
+            retriever=retrieve,
         )

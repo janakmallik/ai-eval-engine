@@ -1015,3 +1015,143 @@ def test_trace_context_manager_ends_trace_after_exception():
         pass
 
     assert trace.ended_at is not None
+
+
+def test_trace_can_create_retrieval_span():
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+
+    assert span.name == "retrieval"
+    assert span.trace_id == trace.trace_id
+    assert span.parent_span_id is None
+    assert span.attributes["retrieval.query"] == "What is gradient descent?"
+    assert span.attributes["retrieval.top_k"] == 5
+
+
+def test_retrieval_span_records_result_count():
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+
+    span.set_attribute("retrieval.result_count", 3)
+
+    assert span.attributes["retrieval.result_count"] == 3
+
+
+def test_retrieval_span_tracks_operation_lifecycle():
+    trace = Trace()
+
+    with trace.start_retrieval(
+            query="What is gradient descent?",
+            top_k=5,
+    ) as span:
+        span.set_attribute("retrieval.result_count", 3)
+
+    assert span.name == "retrieval"
+    assert span.status == "ok"
+    assert span.ended_at is not None
+    assert span.duration is not None
+    assert span.attributes["retrieval.result_count"] == 3
+
+
+def test_trace_retrieval_span_records_result_count():
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+
+    span.set_attribute("retrieval.result_count", 3)
+    span.end()
+
+    assert span.attributes["retrieval.result_count"] == 3
+    assert span.ended_at is not None
+    assert span.duration is not None
+    assert span.duration >= 0
+
+
+def test_trace_can_create_retrieval_span_with_parent():
+    trace = Trace()
+
+    case = trace.start_span("evaluation.case")
+
+    retrieval = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+        parent=case,
+    )
+
+    assert retrieval.name == "retrieval"
+    assert retrieval.parent_span_id == case.span_id
+    assert retrieval.trace_id == trace.trace_id
+
+
+def test_retrieval_span_can_record_result_count():
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+
+    span.record_retrieval_result(result_count=3)
+
+    assert span.attributes["retrieval.result_count"] == 3
+
+
+def test_retrieval_span_records_exception():
+    trace = Trace()
+
+    try:
+        with trace.start_retrieval(
+                query="What is gradient descent?",
+                top_k=5,
+        ):
+            raise RuntimeError("retrieval failed")
+    except RuntimeError:
+        pass
+
+    span = trace.spans[0]
+
+    assert span.status == "error"
+    assert span.status_message == "retrieval failed"
+    assert span.ended_at is not None
+    assert len(span.events) == 1
+    assert span.events[0]["name"] == "exception"
+    assert span.events[0]["attributes"][
+        "exception.message"] == "retrieval failed"
+
+
+def test_retrieval_span_preserves_attributes_through_serialization():
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+
+    span.record_retrieval_result(result_count=3)
+    span.end()
+
+    data = trace.to_dict()
+    restored = Trace.from_dict(data)
+
+    restored_span = restored.spans[0]
+
+    assert restored_span.name == "retrieval"
+    assert restored_span.trace_id == trace.trace_id
+    assert restored_span.span_id == span.span_id
+    assert restored_span.attributes["retrieval.query"] == (
+        "What is gradient descent?")
+    assert restored_span.attributes["retrieval.top_k"] == 5
+    assert restored_span.attributes["retrieval.result_count"] == 3
+    assert restored_span.ended_at == span.ended_at
+    assert restored_span.duration == span.duration

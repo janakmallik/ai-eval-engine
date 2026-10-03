@@ -14,6 +14,8 @@ def evaluate_dataset(
     evaluators: Iterable[Evaluator],
     metadata: dict[str, object] | None = None,
     enable_tracing: bool = False,
+    retriever: Callable[[str, int], Iterable[object]] | None = None,
+    retrieval_top_k: int = 5,
 ) -> EvaluationRun:
 
     results: list[EvaluationResult] = []
@@ -37,6 +39,27 @@ def evaluate_dataset(
                 case_span.set_attribute("case.id", case.id)
                 case_span.set_attribute("case.input", case.input)
                 case_span.set_attribute("case.expected", case.expected)
+
+            if retriever is not None:
+                retrieval_span = (trace.start_retrieval(
+                    query=case.input,
+                    top_k=retrieval_top_k,
+                    parent_span_id=case_span.span_id,
+                ) if trace and case_span else None)
+
+                if retrieval_span:
+                    with retrieval_span:
+                        retrieved = retriever(
+                            case.input,
+                            retrieval_top_k,
+                        )
+                        retrieval_span.record_retrieval_result(
+                            result_count=len(retrieved), )
+                else:
+                    retrieved = retriever(
+                        case.input,
+                        retrieval_top_k,
+                    )
 
             try:
                 model_span = (trace.start_span(

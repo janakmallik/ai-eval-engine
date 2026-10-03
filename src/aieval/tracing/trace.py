@@ -53,6 +53,24 @@ class Trace:
 
         return span
 
+    def start_retrieval(
+        self,
+        query: str,
+        top_k: int,
+        parent_span_id: str | None = None,
+        parent: Span | None = None,
+    ) -> Span:
+        span = self.start_span(
+            "retrieval",
+            parent_span_id=parent_span_id,
+            parent=parent,
+        )
+
+        span.set_attribute("retrieval.query", query)
+        span.set_attribute("retrieval.top_k", top_k)
+
+        return span
+
     def to_dict(self) -> dict:
         return {
             "trace_id": self.trace_id,

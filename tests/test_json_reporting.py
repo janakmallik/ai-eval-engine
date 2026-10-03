@@ -178,3 +178,98 @@ def test_json_reporter_reads_evaluation_run_with_trace(tmp_path):
     assert len(loaded_span.events) == 1
     assert loaded_span.events[0]["name"] == "cache.miss"
     assert loaded_span.events[0]["attributes"]["key"] == "embedding:123"
+
+
+def test_json_reporter_preserves_retrieval_trace(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    span = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+    span.record_retrieval_result(result_count=3)
+    span.end()
+
+    run = EvaluationRun(
+        results=[],
+        metadata={"model": "test-model"},
+        trace=trace,
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "retrieval_run.json"
+    reporter.write(run, path)
+
+    loaded = reporter.read(path)
+
+    assert loaded.trace is not None
+    assert len(loaded.trace.spans) == 1
+
+    loaded_span = loaded.trace.spans[0]
+
+    assert loaded_span.name == "retrieval"
+    assert loaded_span.trace_id == trace.trace_id
+    assert loaded_span.span_id == span.span_id
+    assert loaded_span.attributes["retrieval.query"] == (
+        "What is gradient descent?")
+    assert loaded_span.attributes["retrieval.top_k"] == 5
+    assert loaded_span.attributes["retrieval.result_count"] == 3
+
+
+def test_json_reporter_preserves_retrieval_trace_from_evaluation_run(tmp_path):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        return [
+            "Gradient descent is an optimization algorithm.",
+            "It is used to optimize model parameters.",
+        ]
+
+    def model(text):
+        return "Gradient descent"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+        retrieval_top_k=5,
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "evaluation.json"
+    reporter.write(run, path)
+
+    loaded = reporter.read(path)
+
+    assert loaded.trace is not None
+
+    retrieval_spans = [
+        span for span in loaded.trace.spans if span.name == "retrieval"
+    ]
+
+    assert len(retrieval_spans) == 1
+
+    retrieval = retrieval_spans[0]
+
+    assert retrieval.attributes["retrieval.query"] == (
+        "What is gradient descent?")
+    assert retrieval.attributes["retrieval.top_k"] == 5
+    assert retrieval.attributes["retrieval.result_count"] == 2
+    assert retrieval.ended_at is not None
+    assert retrieval.duration is not None
