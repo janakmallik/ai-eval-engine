@@ -16,6 +16,12 @@ class Trace:
     started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     spans: list[Span] = field(default_factory=list)
+    metadata: dict[str, object] = field(default_factory=dict)
+    attributes: dict[str, object] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self.metadata = dict(self.metadata)
+        self.attributes = dict(self.attributes)
 
     @property
     def duration(self) -> float | None:
@@ -93,6 +99,9 @@ class Trace:
 
         return span
 
+    def set_attribute(self, key: str, value: object) -> None:
+        self.attributes[key] = value
+
     def to_dict(self) -> dict:
         return {
             "trace_id": self.trace_id,
@@ -101,6 +110,8 @@ class Trace:
                 self.ended_at.isoformat() if self.ended_at is not None else None
             ),
             "duration": self.duration,
+            "metadata": self.metadata,
+            "attributes": self.attributes,
             "spans": [span.to_dict() for span in self.spans],
         }
 
@@ -118,4 +129,6 @@ class Trace:
             started_at=started_at,
             ended_at=ended_at,
             spans=[Span.from_dict(span) for span in data.get("spans", [])],
+            metadata=dict(data.get("metadata", {})),
+            attributes=dict(data.get("attributes", {})),
         )

@@ -1,4 +1,5 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+
 from aieval.tracing.span import Span
 from aieval.tracing.trace import Trace
 
@@ -14,7 +15,7 @@ def test_trace_has_start_timestamp():
     trace = Trace()
 
     assert trace.started_at is not None
-    assert trace.started_at.tzinfo == timezone.utc
+    assert trace.started_at.tzinfo == UTC
 
 
 def test_trace_is_not_ended_when_created():
@@ -29,7 +30,7 @@ def test_trace_can_be_ended():
     trace.end()
 
     assert trace.ended_at is not None
-    assert trace.ended_at.tzinfo == timezone.utc
+    assert trace.ended_at.tzinfo == UTC
 
 
 def test_trace_duration_is_none_before_end():
@@ -54,9 +55,6 @@ def test_trace_ids_are_unique():
     assert first.trace_id != second.trace_id
 
 
-from aieval.tracing.span import Span
-
-
 def test_span_has_id():
     span = Span(name="retrieval")
 
@@ -74,7 +72,7 @@ def test_span_has_start_timestamp():
     span = Span(name="retrieval")
 
     assert span.started_at is not None
-    assert span.started_at.tzinfo == timezone.utc
+    assert span.started_at.tzinfo == UTC
 
 
 def test_span_is_not_ended_when_created():
@@ -89,7 +87,7 @@ def test_span_can_be_ended():
     span.end()
 
     assert span.ended_at is not None
-    assert span.ended_at.tzinfo == timezone.utc
+    assert span.ended_at.tzinfo == UTC
 
 
 def test_span_duration_is_none_before_end():
@@ -1341,3 +1339,98 @@ def test_trace_summary_counts_error_spans():
     assert summary["error_count"] == 1
     assert summary["spans"][0]["status"] == "ok"
     assert summary["spans"][1]["status"] == "error"
+
+
+def test_trace_can_store_metadata():
+    trace = Trace(
+        metadata={
+            "model": "test-model",
+            "environment": "test",
+        }
+    )
+
+    assert trace.metadata == {
+        "model": "test-model",
+        "environment": "test",
+    }
+
+
+def test_trace_metadata_is_serialized():
+    trace = Trace(
+        metadata={
+            "model": "test-model",
+            "environment": "test",
+        }
+    )
+
+    data = trace.to_dict()
+
+    assert data["metadata"] == {
+        "model": "test-model",
+        "environment": "test",
+    }
+
+
+def test_trace_metadata_round_trips():
+    trace = Trace(
+        metadata={
+            "model": "test-model",
+            "environment": "test",
+        }
+    )
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.metadata == {
+        "model": "test-model",
+        "environment": "test",
+    }
+
+
+def test_trace_metadata_is_not_shared():
+    metadata = {
+        "model": "test-model",
+    }
+
+    trace = Trace(metadata=metadata)
+    metadata["model"] = "changed"
+
+    assert trace.metadata == {
+        "model": "test-model",
+    }
+
+
+def test_trace_can_set_attribute():
+    trace = Trace()
+
+    trace.set_attribute("service.name", "ai-eval-engine")
+
+    assert trace.attributes["service.name"] == "ai-eval-engine"
+
+
+def test_trace_attributes_are_serialized():
+    trace = Trace()
+
+    trace.set_attribute("service.name", "ai-eval-engine")
+    trace.set_attribute("environment", "test")
+
+    data = trace.to_dict()
+
+    assert data["attributes"] == {
+        "service.name": "ai-eval-engine",
+        "environment": "test",
+    }
+
+
+def test_trace_attributes_round_trip():
+    trace = Trace()
+
+    trace.set_attribute("service.name", "ai-eval-engine")
+    trace.set_attribute("environment", "test")
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.attributes == {
+        "service.name": "ai-eval-engine",
+        "environment": "test",
+    }
