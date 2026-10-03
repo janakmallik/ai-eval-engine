@@ -3,7 +3,8 @@
 # step, so you can build a tree of operations all sharing one trace_id.
 
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
+from typing import Self
 from uuid import uuid4
 
 from aieval.tracing.span import Span
@@ -12,7 +13,7 @@ from aieval.tracing.span import Span
 @dataclass
 class Trace:
     trace_id: str = field(default_factory=lambda: uuid4().hex)
-    started_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    started_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     ended_at: datetime | None = None
     spans: list[Span] = field(default_factory=list)
 
@@ -23,8 +24,15 @@ class Trace:
 
         return (self.ended_at - self.started_at).total_seconds()
 
+
+    def __enter__(self) -> Self:
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> None:
+        self.end()
+
     def end(self) -> None:
-        self.ended_at = datetime.now(timezone.utc)
+        self.ended_at = datetime.now(UTC)
 
     def start_span(
         self,

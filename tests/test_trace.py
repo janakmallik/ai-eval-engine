@@ -965,3 +965,53 @@ def test_span_can_restore_events_from_dict():
     assert event["name"] == "cache.miss"
     assert event["attributes"]["key"] == "embedding:123"
     assert event["timestamp"] == span.events[0]["timestamp"]
+
+
+def test_trace_spans_can_be_closed_after_exception():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+
+    try:
+        with model:
+            raise ValueError("model failed")
+    except ValueError:
+        pass
+
+    case.end()
+
+    assert model.ended_at is not None
+    assert model.status == "error"
+    assert model.status_message == "model failed"
+    assert len(model.events) == 1
+
+    assert case.ended_at is not None
+
+
+def test_trace_context_manager_ends_trace():
+    trace = Trace()
+
+    with trace:
+        trace.start_span("evaluation")
+
+    assert trace.ended_at is not None
+
+
+def test_trace_context_manager_ends_trace_after_exception():
+    trace = Trace()
+
+    try:
+        with trace:
+            raise ValueError("evaluation failed")
+    except ValueError:
+        pass
+
+    assert trace.ended_at is not None

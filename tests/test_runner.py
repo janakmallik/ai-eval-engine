@@ -947,3 +947,22 @@ def test_evaluate_dataset_evaluator_span_records_exception():
         pass
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_evaluate_dataset_propagates_model_failure():
+    dataset = [EvalCase(
+        id="001",
+        input="Paris",
+        expected="Paris",
+    )]
+
+    def failing_model(_):
+        raise ValueError("model failed")
+
+    with pytest.raises(ValueError, match="model failed"):
+        evaluate_dataset(
+            model=failing_model,
+            dataset=dataset,
+            evaluators=[],
+            enable_tracing=True,
+        )
