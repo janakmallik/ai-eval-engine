@@ -24,31 +24,27 @@ class Trace:
 
         return (self.ended_at - self.started_at).total_seconds()
 
-
     def summary(self) -> dict:
-        durations = [
-            span.duration for span in self.spans if span.duration is not None
-        ]
+        durations = [span.duration for span in self.spans if span.duration is not None]
 
         return {
-            "trace_id":
-            self.trace_id,
-            "span_count":
-            len(self.spans),
-            "error_count":
-            sum(span.status == "error" for span in self.spans),
-            "duration":
-            self.duration,
-            "completed_span_count":
-            sum(span.ended_at is not None for span in self.spans),
-            "total_duration":
-            sum(durations),
-            "spans": [{
-                "span_id": span.span_id,
-                "name": span.name,
-                "status": span.status,
-                "duration": span.duration,
-            } for span in self.spans],
+            "trace_id": self.trace_id,
+            "span_count": len(self.spans),
+            "error_count": sum(span.status == "error" for span in self.spans),
+            "duration": self.duration,
+            "completed_span_count": sum(
+                span.ended_at is not None for span in self.spans
+            ),
+            "total_duration": sum(durations),
+            "spans": [
+                {
+                    "span_id": span.span_id,
+                    "name": span.name,
+                    "status": span.status,
+                    "duration": span.duration,
+                }
+                for span in self.spans
+            ],
         }
 
     def __enter__(self) -> Self:
@@ -99,22 +95,23 @@ class Trace:
 
     def to_dict(self) -> dict:
         return {
-            "trace_id":
-            self.trace_id,
-            "started_at":
-            self.started_at.isoformat(),
-            "ended_at":
-            (self.ended_at.isoformat() if self.ended_at is not None else None),
-            "duration":
-            self.duration,
+            "trace_id": self.trace_id,
+            "started_at": self.started_at.isoformat(),
+            "ended_at": (
+                self.ended_at.isoformat() if self.ended_at is not None else None
+            ),
+            "duration": self.duration,
             "spans": [span.to_dict() for span in self.spans],
         }
 
     @classmethod
     def from_dict(cls, data: dict) -> "Trace":
         started_at = datetime.fromisoformat(data["started_at"])
-        ended_at = (datetime.fromisoformat(data["ended_at"])
-                    if data["ended_at"] is not None else None)
+        ended_at = (
+            datetime.fromisoformat(data["ended_at"])
+            if data["ended_at"] is not None
+            else None
+        )
 
         return cls(
             trace_id=data["trace_id"],

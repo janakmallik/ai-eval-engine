@@ -209,6 +209,7 @@ def test_evaluation_run_to_dict():
         },
         "metadata": {},
         "trace": None,
+        "trace_summary": None,
     }
 
 
@@ -317,3 +318,54 @@ def test_evaluation_run_to_dict_trace_defaults_to_none():
     data = run.to_dict()
 
     assert data["trace"] is None
+
+
+def test_evaluation_run_trace_summary():
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.end()
+
+    model = trace.start_span("model")
+    model.set_status("ok")
+    model.end()
+
+    trace.end()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    summary = run.trace_summary()
+
+    assert summary["trace_id"] == trace.trace_id
+    assert summary["span_count"] == 2
+    assert summary["error_count"] == 0
+    assert summary["duration"] == trace.duration
+
+
+def test_evaluation_run_to_dict_includes_trace_summary():
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.end()
+
+    model = trace.start_span("model")
+    model.set_status("ok")
+    model.end()
+
+    trace.end()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    data = run.to_dict()
+
+    assert data["trace_summary"] == trace.summary()

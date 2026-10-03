@@ -46,7 +46,6 @@ class Span:
 
         self.end()
 
-
     def end(self) -> None:
         if self.ended_at is not None:
             return

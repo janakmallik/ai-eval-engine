@@ -91,6 +91,12 @@ class EvaluationRun:
             for evaluator_name in evaluator_names
         }
 
+    def trace_summary(self) -> dict | None:
+        if self.trace is None:
+            return None
+
+        return self.trace.summary()
+
     def to_dict(self) -> dict:
         return {
             "run_id": self.run_id,
@@ -98,6 +104,7 @@ class EvaluationRun:
             "results": [result.to_dict() for result in self.results],
             "metadata": self.metadata,
             "trace": self.trace.to_dict() if self.trace is not None else None,
+            "trace_summary": self.trace_summary(),
             "total": self.total,
             "passed": self.passed,
             "failed": self.failed,

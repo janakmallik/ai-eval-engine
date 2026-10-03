@@ -30,10 +30,14 @@ def evaluate_dataset(
             total_cases += 1
             case_passed = True
 
-            case_span = (trace.start_span(
-                "evaluation.case",
-                parent_span_id=root_span.span_id,
-            ) if trace and root_span else None)
+            case_span = (
+                trace.start_span(
+                    "evaluation.case",
+                    parent_span_id=root_span.span_id,
+                )
+                if trace and root_span
+                else None
+            )
 
             if case_span:
                 case_span.set_attribute("case.id", case.id)
@@ -41,11 +45,15 @@ def evaluate_dataset(
                 case_span.set_attribute("case.expected", case.expected)
 
             if retriever is not None:
-                retrieval_span = (trace.start_retrieval(
-                    query=case.input,
-                    top_k=retrieval_top_k,
-                    parent_span_id=case_span.span_id,
-                ) if trace and case_span else None)
+                retrieval_span = (
+                    trace.start_retrieval(
+                        query=case.input,
+                        top_k=retrieval_top_k,
+                        parent_span_id=case_span.span_id,
+                    )
+                    if trace and case_span
+                    else None
+                )
 
                 if retrieval_span:
                     with retrieval_span:
@@ -54,7 +62,8 @@ def evaluate_dataset(
                             retrieval_top_k,
                         )
                         retrieval_span.record_retrieval_result(
-                            result_count=len(retrieved), )
+                            result_count=len(retrieved),
+                        )
                 else:
                     retrieved = retriever(
                         case.input,
@@ -62,10 +71,14 @@ def evaluate_dataset(
                     )
 
             try:
-                model_span = (trace.start_span(
-                    "model",
-                    parent_span_id=case_span.span_id,
-                ) if trace and case_span else None)
+                model_span = (
+                    trace.start_span(
+                        "model",
+                        parent_span_id=case_span.span_id,
+                    )
+                    if trace and case_span
+                    else None
+                )
 
                 if model_span:
                     model_span.set_attribute("model.input", case.input)
@@ -86,14 +99,17 @@ def evaluate_dataset(
                     evaluator_name = getattr(
                         evaluator,
                         "name",
-                        evaluator.__class__.__name__.removesuffix(
-                            "Evaluator").lower(),
+                        evaluator.__class__.__name__.removesuffix("Evaluator").lower(),
                     )
 
-                    evaluator_span = (trace.start_span(
-                        f"evaluator.{evaluator_name}",
-                        parent_span_id=case_span.span_id,
-                    ) if trace and case_span else None)
+                    evaluator_span = (
+                        trace.start_span(
+                            f"evaluator.{evaluator_name}",
+                            parent_span_id=case_span.span_id,
+                        )
+                        if trace and case_span
+                        else None
+                    )
 
                     try:
                         if evaluator_span:
@@ -144,8 +160,7 @@ def evaluate_dataset(
             total_results = len(results)
             passed_results = sum(result.passed for result in results)
             failed_results = total_results - passed_results
-            pass_rate = (passed_results /
-                         total_results if total_results else 0.0)
+            pass_rate = passed_results / total_results if total_results else 0.0
 
             root_span.set_attribute(
                 "evaluation.total_cases",

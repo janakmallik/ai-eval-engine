@@ -82,28 +82,23 @@ def test_json_reporter_writes_file(tmp_path):
     assert output_path.exists()
 
     assert json.loads(output_path.read_text()) == {
-        "schema_version":
-        1,
-        "run_id":
-        run.run_id,
-        "results": [{
-            "case_id": "001",
-            "evaluator_name": "exact_match",
-            "expected": "4",
-            "actual": "4",
-            "score": 1.0,
-            "passed": True,
-        }],
-        "total":
-        1,
-        "passed":
-        1,
-        "failed":
-        0,
-        "score":
-        1.0,
-        "pass_rate":
-        1.0,
+        "schema_version": 1,
+        "run_id": run.run_id,
+        "results": [
+            {
+                "case_id": "001",
+                "evaluator_name": "exact_match",
+                "expected": "4",
+                "actual": "4",
+                "score": 1.0,
+                "passed": True,
+            }
+        ],
+        "total": 1,
+        "passed": 1,
+        "failed": 0,
+        "score": 1.0,
+        "pass_rate": 1.0,
         "summaries": {
             "exact_match": {
                 "evaluator_name": "exact_match",
@@ -115,8 +110,8 @@ def test_json_reporter_writes_file(tmp_path):
             }
         },
         "metadata": {},
-        "trace":
-        None,
+        "trace": None,
+        "trace_summary": None,
     }
 
 
@@ -219,8 +214,7 @@ def test_json_reporter_preserves_retrieval_trace(tmp_path):
     assert loaded_span.name == "retrieval"
     assert loaded_span.trace_id == trace.trace_id
     assert loaded_span.span_id == span.span_id
-    assert loaded_span.attributes["retrieval.query"] == (
-        "What is gradient descent?")
+    assert loaded_span.attributes["retrieval.query"] == ("What is gradient descent?")
     assert loaded_span.attributes["retrieval.top_k"] == 5
     assert loaded_span.attributes["retrieval.result_count"] == 3
 
@@ -265,16 +259,13 @@ def test_json_reporter_preserves_retrieval_trace_from_evaluation_run(tmp_path):
 
     assert loaded.trace is not None
 
-    retrieval_spans = [
-        span for span in loaded.trace.spans if span.name == "retrieval"
-    ]
+    retrieval_spans = [span for span in loaded.trace.spans if span.name == "retrieval"]
 
     assert len(retrieval_spans) == 1
 
     retrieval = retrieval_spans[0]
 
-    assert retrieval.attributes["retrieval.query"] == (
-        "What is gradient descent?")
+    assert retrieval.attributes["retrieval.query"] == ("What is gradient descent?")
     assert retrieval.attributes["retrieval.top_k"] == 5
     assert retrieval.attributes["retrieval.result_count"] == 2
     assert retrieval.ended_at is not None
@@ -346,11 +337,60 @@ def test_json_reporter_preserves_nested_trace_hierarchy(tmp_path):
 
     assert loaded_retrieval.name == "retrieval"
     assert loaded_retrieval.parent_span_id == loaded_case.span_id
-    assert (loaded_retrieval.attributes["retrieval.query"] ==
-            "What is gradient descent?")
+    assert loaded_retrieval.attributes["retrieval.query"] == "What is gradient descent?"
     assert loaded_retrieval.attributes["retrieval.top_k"] == 5
     assert loaded_retrieval.attributes["retrieval.result_count"] == 3
 
     assert loaded_model.name == "model"
     assert loaded_model.parent_span_id == loaded_case.span_id
     assert loaded_model.attributes["model.name"] == "test-model"
+
+
+def test_json_reporter_includes_trace_summary(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.end()
+
+    model = trace.start_span("model")
+    model.set_status("ok")
+    model.end()
+
+    trace.end()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "trace_report.json"
+    reporter.write(run, path)
+
+    data = json.loads(path.read_text())
+
+    assert data["trace_summary"] == {
+        "trace_id": trace.trace_id,
+        "span_count": 2,
+        "error_count": 0,
+        "duration": trace.duration,
+        "completed_span_count": 2,
+        "total_duration": 0.0,
+        "spans": [
+            {
+                "span_id": root.span_id,
+                "name": "evaluation",
+                "status": "ok",
+                "duration": root.duration,
+            },
+            {
+                "span_id": model.span_id,
+                "name": "model",
+                "status": "ok",
+                "duration": model.duration,
+            },
+        ],
+    }
