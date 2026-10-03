@@ -233,9 +233,7 @@ def test_trace_supports_nested_span_hierarchy():
 def test_span_stores_attributes():
     trace = Trace()
 
-    span = trace.start_span(
-        "retrieval",
-    )
+    span = trace.start_span("retrieval", )
 
     span.set_attribute("model", "embedding-model")
     span.set_attribute("document_count", 5)
@@ -315,9 +313,8 @@ def test_child_span_to_dict_includes_parent_and_attributes():
 
     data = trace.to_dict()
 
-    child_data = next(
-        span for span in data["spans"] if span["span_id"] == child.span_id
-    )
+    child_data = next(span for span in data["spans"]
+                      if span["span_id"] == child.span_id)
 
     assert child_data["parent_span_id"] == parent.span_id
     assert child_data["attributes"] == {
@@ -666,7 +663,8 @@ def test_span_records_exception_details():
 
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
-    assert event["attributes"]["exception.message"] == "vector database unavailable"
+    assert event["attributes"][
+        "exception.message"] == "vector database unavailable"
     assert event["attributes"]["exception.stacktrace"]
 
 
@@ -704,10 +702,8 @@ def test_span_records_exception_stacktrace():
     event = span.events[0]
 
     assert "exception.stacktrace" in event["attributes"]
-    assert (
-        "ValueError: vector database unavailable"
-        in event["attributes"]["exception.stacktrace"]
-    )
+    assert ("ValueError: vector database unavailable"
+            in event["attributes"]["exception.stacktrace"])
 
 
 # don't allow exceptions after span end
@@ -747,7 +743,8 @@ def test_span_can_record_multiple_exceptions():
     assert span.events[0]["attributes"]["exception.type"] == "ValueError"
     assert span.events[0]["attributes"]["exception.message"] == "first failure"
     assert span.events[1]["attributes"]["exception.type"] == "TimeoutError"
-    assert span.events[1]["attributes"]["exception.message"] == "second failure"
+    assert span.events[1]["attributes"][
+        "exception.message"] == "second failure"
 
 
 # serialize exception events, We've tested the in-memory representation. Now let's
@@ -768,7 +765,8 @@ def test_span_to_dict_preserves_exception_details():
 
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
-    assert event["attributes"]["exception.message"] == ("vector database unavailable")
+    assert event["attributes"]["exception.message"] == (
+        "vector database unavailable")
     assert "exception.stacktrace" in event["attributes"]
 
 
@@ -837,7 +835,8 @@ def test_span_context_manager_records_exception_and_error_status():
 
     assert event["name"] == "exception"
     assert event["attributes"]["exception.type"] == "ValueError"
-    assert event["attributes"]["exception.message"] == ("vector database unavailable")
+    assert event["attributes"]["exception.message"] == (
+        "vector database unavailable")
     assert "exception.stacktrace" in event["attributes"]
 
 
@@ -1155,3 +1154,88 @@ def test_retrieval_span_preserves_attributes_through_serialization():
     assert restored_span.attributes["retrieval.result_count"] == 3
     assert restored_span.ended_at == span.ended_at
     assert restored_span.duration == span.duration
+
+
+def test_trace_round_trip_preserves_nested_span_hierarchy():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.set_attribute("evaluation.type", "dataset")
+
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    case.set_attribute("case.id", "001")
+
+    retrieval = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+        parent=case,
+    )
+
+    retrieval.record_retrieval_result(result_count=3)
+    retrieval.add_event(
+        "cache.miss",
+        attributes={
+            "key": "gradient-descent",
+        },
+    )
+    retrieval.set_status("ok")
+    retrieval.end()
+
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+    model.set_attribute("model.name", "test-model")
+    model.set_status("ok")
+    model.end()
+
+    case.set_status("ok")
+    case.end()
+
+    root.set_status("ok")
+    root.end()
+
+    trace.end()
+
+    data = trace.to_dict()
+    restored = Trace.from_dict(data)
+
+    assert restored.trace_id == trace.trace_id
+    assert restored.started_at == trace.started_at
+    assert restored.ended_at == trace.ended_at
+
+    assert len(restored.spans) == 4
+
+    restored_root = restored.spans[0]
+    restored_case = restored.spans[1]
+    restored_retrieval = restored.spans[2]
+    restored_model = restored.spans[3]
+
+    assert restored_root.name == "evaluation"
+    assert restored_root.parent_span_id is None
+    assert restored_root.status == "ok"
+
+    assert restored_case.name == "evaluation.case"
+    assert restored_case.parent_span_id == restored_root.span_id
+    assert restored_case.attributes["case.id"] == "001"
+
+    assert restored_retrieval.name == "retrieval"
+    assert restored_retrieval.parent_span_id == restored_case.span_id
+    assert (restored_retrieval.attributes["retrieval.query"] ==
+            "What is gradient descent?")
+    assert restored_retrieval.attributes["retrieval.top_k"] == 5
+    assert restored_retrieval.attributes["retrieval.result_count"] == 3
+    assert restored_retrieval.status == "ok"
+
+    assert len(restored_retrieval.events) == 1
+    assert restored_retrieval.events[0]["name"] == "cache.miss"
+    assert restored_retrieval.events[0]["attributes"][
+        "key"] == "gradient-descent"
+
+    assert restored_model.name == "model"
+    assert restored_model.parent_span_id == restored_case.span_id
+    assert restored_model.attributes["model.name"] == "test-model"
+    assert restored_model.status == "ok"

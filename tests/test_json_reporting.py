@@ -82,23 +82,28 @@ def test_json_reporter_writes_file(tmp_path):
     assert output_path.exists()
 
     assert json.loads(output_path.read_text()) == {
-        "schema_version": 1,
-        "run_id": run.run_id,
-        "results": [
-            {
-                "case_id": "001",
-                "evaluator_name": "exact_match",
-                "expected": "4",
-                "actual": "4",
-                "score": 1.0,
-                "passed": True,
-            }
-        ],
-        "total": 1,
-        "passed": 1,
-        "failed": 0,
-        "score": 1.0,
-        "pass_rate": 1.0,
+        "schema_version":
+        1,
+        "run_id":
+        run.run_id,
+        "results": [{
+            "case_id": "001",
+            "evaluator_name": "exact_match",
+            "expected": "4",
+            "actual": "4",
+            "score": 1.0,
+            "passed": True,
+        }],
+        "total":
+        1,
+        "passed":
+        1,
+        "failed":
+        0,
+        "score":
+        1.0,
+        "pass_rate":
+        1.0,
         "summaries": {
             "exact_match": {
                 "evaluator_name": "exact_match",
@@ -110,7 +115,8 @@ def test_json_reporter_writes_file(tmp_path):
             }
         },
         "metadata": {},
-        "trace": None,
+        "trace":
+        None,
     }
 
 
@@ -273,3 +279,78 @@ def test_json_reporter_preserves_retrieval_trace_from_evaluation_run(tmp_path):
     assert retrieval.attributes["retrieval.result_count"] == 2
     assert retrieval.ended_at is not None
     assert retrieval.duration is not None
+
+
+def test_json_reporter_preserves_nested_trace_hierarchy(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    case.set_attribute("case.id", "001")
+
+    retrieval = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+        parent=case,
+    )
+    retrieval.record_retrieval_result(result_count=3)
+    retrieval.set_status("ok")
+    retrieval.end()
+
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+    model.set_attribute("model.name", "test-model")
+    model.set_status("ok")
+    model.end()
+
+    case.end()
+    root.end()
+    trace.end()
+
+    run = EvaluationRun(
+        results=[],
+        metadata={"model": "test-model"},
+        trace=trace,
+    )
+
+    reporter = JsonReporter()
+
+    path = tmp_path / "nested_trace.json"
+    reporter.write(run, path)
+
+    loaded = reporter.read(path)
+
+    assert loaded.trace is not None
+    assert loaded.trace.trace_id == trace.trace_id
+    assert len(loaded.trace.spans) == 4
+
+    loaded_root = loaded.trace.spans[0]
+    loaded_case = loaded.trace.spans[1]
+    loaded_retrieval = loaded.trace.spans[2]
+    loaded_model = loaded.trace.spans[3]
+
+    assert loaded_root.name == "evaluation"
+    assert loaded_root.parent_span_id is None
+
+    assert loaded_case.name == "evaluation.case"
+    assert loaded_case.parent_span_id == loaded_root.span_id
+    assert loaded_case.attributes["case.id"] == "001"
+
+    assert loaded_retrieval.name == "retrieval"
+    assert loaded_retrieval.parent_span_id == loaded_case.span_id
+    assert (loaded_retrieval.attributes["retrieval.query"] ==
+            "What is gradient descent?")
+    assert loaded_retrieval.attributes["retrieval.top_k"] == 5
+    assert loaded_retrieval.attributes["retrieval.result_count"] == 3
+
+    assert loaded_model.name == "model"
+    assert loaded_model.parent_span_id == loaded_case.span_id
+    assert loaded_model.attributes["model.name"] == "test-model"
