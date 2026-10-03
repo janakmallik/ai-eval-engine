@@ -1239,3 +1239,106 @@ def test_trace_round_trip_preserves_nested_span_hierarchy():
     assert restored_model.parent_span_id == restored_case.span_id
     assert restored_model.attributes["model.name"] == "test-model"
     assert restored_model.status == "ok"
+
+
+def test_trace_summary_reports_basic_trace_metrics():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+
+    retrieval = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+        parent=case,
+    )
+    retrieval.record_retrieval_result(result_count=3)
+    retrieval.end()
+
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+    model.end()
+
+    case.end()
+    root.end()
+    trace.end()
+
+    summary = trace.summary()
+
+    assert summary["trace_id"] == trace.trace_id
+    assert summary["span_count"] == 4
+    assert summary["error_count"] == 0
+    assert summary["duration"] == trace.duration
+
+
+def test_trace_summary_includes_span_details():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.set_status("ok")
+    root.end()
+
+    retrieval = trace.start_retrieval(
+        query="What is gradient descent?",
+        top_k=5,
+    )
+    retrieval.set_status("ok")
+    retrieval.end()
+
+    model = trace.start_span("model")
+    model.set_status("error", "model failed")
+    model.end()
+
+    trace.end()
+
+    summary = trace.summary()
+
+    assert summary["spans"] == [
+        {
+            "span_id": root.span_id,
+            "name": "evaluation",
+            "status": "ok",
+            "duration": root.duration,
+        },
+        {
+            "span_id": retrieval.span_id,
+            "name": "retrieval",
+            "status": "ok",
+            "duration": retrieval.duration,
+        },
+        {
+            "span_id": model.span_id,
+            "name": "model",
+            "status": "error",
+            "duration": model.duration,
+        },
+    ]
+
+
+def test_trace_summary_counts_error_spans():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    root.end()
+
+    model = trace.start_span("model")
+
+    try:
+        with model:
+            raise RuntimeError("model failed")
+    except RuntimeError:
+        pass
+
+    trace.end()
+
+    summary = trace.summary()
+
+    assert summary["span_count"] == 2
+    assert summary["error_count"] == 1
+    assert summary["spans"][0]["status"] == "ok"
+    assert summary["spans"][1]["status"] == "error"

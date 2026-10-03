@@ -46,7 +46,14 @@ class Span:
 
         self.end()
 
+
     def end(self) -> None:
+        if self.ended_at is not None:
+            return
+
+        if self.status == "unset":
+            self.status = "ok"
+
         self.ended_at = datetime.now(timezone.utc)
 
     def to_dict(self) -> dict:
@@ -107,7 +114,7 @@ class Span:
 
     def record_retrieval_result(self, result_count: int) -> None:
         self.set_attribute("retrieval.result_count", result_count)
-        
+
     # once a span has ended, subsequent span mutations such as adding events should be ignored.
     def add_event(
         self,
