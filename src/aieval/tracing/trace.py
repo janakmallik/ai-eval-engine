@@ -18,10 +18,19 @@ class Trace:
     spans: list[Span] = field(default_factory=list)
     metadata: dict[str, object] = field(default_factory=dict)
     attributes: dict[str, object] = field(default_factory=dict)
+    events: list[dict[str, object]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         self.metadata = dict(self.metadata)
         self.attributes = dict(self.attributes)
+        self.events = [
+            {
+                "name": event["name"],
+                "timestamp": event["timestamp"],
+                "attributes": dict(event.get("attributes", {})),
+            }
+            for event in self.events
+        ]
 
     @property
     def duration(self) -> float | None:
@@ -61,6 +70,19 @@ class Trace:
 
     def end(self) -> None:
         self.ended_at = datetime.now(UTC)
+
+    def add_event(
+        self,
+        name: str,
+        attributes: dict | None = None,
+    ) -> None:
+        self.events.append(
+            {
+                "name": name,
+                "timestamp": datetime.now(UTC),
+                "attributes": dict(attributes or {}),
+            }
+        )
 
     def start_span(
         self,
@@ -112,6 +134,14 @@ class Trace:
             "duration": self.duration,
             "metadata": self.metadata,
             "attributes": self.attributes,
+            "events": [
+                {
+                    "name": event["name"],
+                    "timestamp": event["timestamp"].isoformat(),
+                    "attributes": event["attributes"],
+                }
+                for event in self.events
+            ],
             "spans": [span.to_dict() for span in self.spans],
         }
 
@@ -131,4 +161,12 @@ class Trace:
             spans=[Span.from_dict(span) for span in data.get("spans", [])],
             metadata=dict(data.get("metadata", {})),
             attributes=dict(data.get("attributes", {})),
+            events=[
+                {
+                    "name": event["name"],
+                    "timestamp": datetime.fromisoformat(event["timestamp"]),
+                    "attributes": dict(event.get("attributes", {})),
+                }
+                for event in data.get("events", [])
+            ],
         )

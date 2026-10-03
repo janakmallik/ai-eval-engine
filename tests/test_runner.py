@@ -3,9 +3,9 @@ import pytest
 from aieval.dataset import EvalCase, EvalDataset
 from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
-from aieval.runner import evaluate_dataset
 from aieval.evaluators.length import LengthEvaluator
 from aieval.result import EvaluationResult
+from aieval.runner import evaluate_dataset
 
 
 def test_evaluate_dataset():

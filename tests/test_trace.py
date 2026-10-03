@@ -1434,3 +1434,145 @@ def test_trace_attributes_round_trip():
         "service.name": "ai-eval-engine",
         "environment": "test",
     }
+
+
+def test_trace_span_ids_are_unique():
+    trace = Trace()
+
+    first = trace.start_span("first")
+    second = trace.start_span("second")
+    third = trace.start_span("third")
+
+    span_ids = {first.span_id, second.span_id, third.span_id}
+
+    assert len(span_ids) == 3
+
+
+def test_trace_assigns_same_trace_id_to_all_spans():
+    trace = Trace()
+
+    first = trace.start_span("first")
+    second = trace.start_span("second")
+
+    assert first.trace_id == trace.trace_id
+    assert second.trace_id == trace.trace_id
+
+
+def test_child_span_references_parent():
+    trace = Trace()
+
+    parent = trace.start_span("parent")
+    child = trace.start_span("child", parent=parent)
+
+    assert child.parent_span_id == parent.span_id
+
+
+def test_trace_duration_is_none_before_trace_ends():
+    trace = Trace()
+
+    assert trace.duration is None
+
+
+def test_span_duration_is_none_before_span_ends():
+    trace = Trace()
+
+    span = trace.start_span("operation")
+
+    assert span.duration is None
+
+
+def test_trace_summary_counts_only_registered_spans():
+    trace = Trace()
+
+    trace.start_span("first")
+    trace.start_span("second")
+
+    summary = trace.summary()
+
+    assert summary["span_count"] == 2
+
+
+def test_trace_serialization_preserves_span_hierarchy():
+    trace = Trace()
+
+    root = trace.start_span("root")
+    child = trace.start_span("child", parent=root)
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.spans[0].span_id == root.span_id
+    assert restored.spans[1].span_id == child.span_id
+    assert restored.spans[1].parent_span_id == root.span_id
+    assert restored.spans[1].trace_id == restored.trace_id
+
+
+def test_trace_can_add_event():
+    trace = Trace()
+
+    trace.add_event(
+        "evaluation.started",
+        attributes={"dataset": "test"},
+    )
+
+    assert len(trace.events) == 1
+    assert trace.events[0]["name"] == "evaluation.started"
+    assert trace.events[0]["attributes"] == {"dataset": "test"}
+
+
+def test_trace_event_has_timestamp():
+    trace = Trace()
+
+    trace.add_event("evaluation.started")
+
+    event = trace.events[0]
+
+    assert event["name"] == "evaluation.started"
+    assert event["timestamp"] is not None
+    assert event["attributes"] == {}
+
+
+def test_trace_events_are_serialized():
+    trace = Trace()
+
+    trace.add_event(
+        "evaluation.started",
+        attributes={"dataset": "test"},
+    )
+
+    data = trace.to_dict()
+
+    assert len(data["events"]) == 1
+    assert data["events"][0]["name"] == "evaluation.started"
+    assert data["events"][0]["attributes"] == {"dataset": "test"}
+    assert "timestamp" in data["events"][0]
+
+
+def test_trace_events_round_trip():
+    trace = Trace()
+
+    trace.add_event(
+        "evaluation.started",
+        attributes={"dataset": "test"},
+    )
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert len(restored.events) == 1
+    assert restored.events[0]["name"] == "evaluation.started"
+    assert restored.events[0]["attributes"] == {"dataset": "test"}
+
+
+def test_trace_events_are_not_shared():
+    events = []
+
+    trace = Trace(events=events)
+
+    events.append(
+        {
+            "name": "external.event",
+            "timestamp": trace.started_at,
+            "attributes": {},
+        }
+    )
+
+    assert trace.events == []
