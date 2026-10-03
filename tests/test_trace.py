@@ -1576,3 +1576,96 @@ def test_trace_events_are_not_shared():
     )
 
     assert trace.events == []
+
+
+def test_trace_can_start_model_span():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    assert model.name == "model"
+    assert model.trace_id == trace.trace_id
+    assert model.attributes["model.name"] == "test-model"
+    assert model.attributes["model.provider"] == "test-provider"
+
+
+def test_trace_can_start_model_span_with_parent():
+    trace = Trace()
+
+    case = trace.start_span("evaluation.case")
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+        parent=case,
+    )
+
+    assert model.parent_span_id == case.span_id
+
+
+def test_trace_can_start_model_span_with_parent_span_id():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+        parent_span_id="parent-123",
+    )
+
+    assert model.parent_span_id == "parent-123"
+
+
+def test_model_span_can_record_token_usage():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_token_usage(
+        input_tokens=100,
+        output_tokens=50,
+    )
+
+    assert model.attributes["model.input_tokens"] == 100
+    assert model.attributes["model.output_tokens"] == 50
+
+
+def test_model_span_can_record_total_token_usage():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_token_usage(
+        input_tokens=100,
+        output_tokens=50,
+    )
+
+    assert model.attributes["model.total_tokens"] == 150
+
+
+def test_model_token_usage_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_token_usage(
+        input_tokens=100,
+        output_tokens=50,
+    )
+
+    restored = Span.from_dict(model.to_dict())
+
+    assert restored.attributes["model.input_tokens"] == 100
+    assert restored.attributes["model.output_tokens"] == 50
+    assert restored.attributes["model.total_tokens"] == 150

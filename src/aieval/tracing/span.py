@@ -111,6 +111,18 @@ class Span:
     def set_attribute(self, key: str, value: object) -> None:
         self.attributes[key] = value
 
+    def record_token_usage(
+        self,
+        input_tokens: int,
+        output_tokens: int,
+    ) -> None:
+        self.set_attribute("model.input_tokens", input_tokens)
+        self.set_attribute("model.output_tokens", output_tokens)
+        self.set_attribute(
+            "model.total_tokens",
+            input_tokens + output_tokens,
+        )
+
     def record_retrieval_result(self, result_count: int) -> None:
         self.set_attribute("retrieval.result_count", result_count)
 

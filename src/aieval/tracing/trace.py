@@ -121,6 +121,24 @@ class Trace:
 
         return span
 
+    def start_model(
+        self,
+        model: str,
+        provider: str,
+        parent_span_id: str | None = None,
+        parent: Span | None = None,
+    ) -> Span:
+        span = self.start_span(
+            "model",
+            parent_span_id=parent_span_id,
+            parent=parent,
+        )
+
+        span.set_attribute("model.name", model)
+        span.set_attribute("model.provider", provider)
+
+        return span
+
     def set_attribute(self, key: str, value: object) -> None:
         self.attributes[key] = value
 
