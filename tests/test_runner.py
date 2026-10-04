@@ -1166,3 +1166,70 @@ def test_evaluate_dataset_records_model_input_and_output():
 
     assert model_span.attributes["model.input"] == ("What is the capital of France?")
     assert model_span.attributes["model.output"] == "Paris"
+
+
+def test_evaluate_dataset_records_model_usage():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return "Paris"
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.usage is None
+
+
+from aieval.tracing.response import ModelResponse
+
+from aieval.tracing.usage import ModelUsage
+
+
+def test_evaluate_dataset_records_model_usage_from_response():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return ModelResponse(
+            output="Paris",
+            usage=ModelUsage(
+                input_tokens=100,
+                output_tokens=20,
+                input_cost=0.001,
+                output_cost=0.002,
+            ),
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.usage is not None
+    assert model_span.usage.input_tokens == 100
+    assert model_span.usage.output_tokens == 20
+    assert model_span.usage.total_tokens == 120
+    assert model_span.usage.input_cost == 0.001
+    assert model_span.usage.output_cost == 0.002
+    assert model_span.usage.total_cost == 0.003

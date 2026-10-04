@@ -5,6 +5,7 @@ from aieval.dataset import EvalCase
 from aieval.evaluators.base import Evaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
+from aieval.tracing.response import ModelResponse
 from aieval.tracing.trace import Trace
 
 
@@ -84,14 +85,27 @@ def evaluate_dataset(
                 )
 
                 if model_span:
-                    model_span.record_input(case.input)
+                    model_span.set_attribute("model.input", case.input)
 
                     with model_span:
-                        actual = model(case.input)
+                        response = model(case.input)
 
-                    model_span.record_output(actual)
+                    if isinstance(response, ModelResponse):
+                        actual = response.output
+
+                        if response.usage is not None:
+                            model_span.record_usage(response.usage)
+                    else:
+                        actual = response
+
+                    model_span.set_attribute("model.output", actual)
                 else:
-                    actual = model(case.input)
+                    response = model(case.input)
+                    actual = (
+                        response.output
+                        if isinstance(response, ModelResponse)
+                        else response
+                    )
 
                 context = EvaluationContext(
                     case=case,
