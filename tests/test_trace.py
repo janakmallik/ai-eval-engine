@@ -1846,3 +1846,90 @@ def test_model_response_id_round_trips():
 # - ✅ Store it as a span attribute
 # - ✅ Serialize it
 # - ✅ Restore it from serialized data
+# starting something new from here.....
+
+
+def test_model_span_can_record_temperature():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_temperature(0.7)
+
+    assert model.attributes["model.temperature"] == 0.7
+
+
+def test_model_temperature_is_serialized():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_temperature(0.7)
+
+    data = trace.to_dict()
+
+    assert data["spans"][0]["attributes"]["model.temperature"] == 0.7
+
+
+def test_model_temperature_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_temperature(0.7)
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.spans[0].attributes["model.temperature"] == 0.7
+
+
+def test_model_span_can_record_max_tokens():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_max_tokens(500)
+
+    assert model.attributes["model.max_tokens"] == 500
+
+
+def test_model_max_tokens_is_serialized():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_max_tokens(500)
+
+    data = trace.to_dict()
+
+    assert data["spans"][0]["attributes"]["model.max_tokens"] == 500
+
+
+def test_model_max_tokens_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_max_tokens(500)
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.spans[0].attributes["model.max_tokens"] == 500

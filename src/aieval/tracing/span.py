@@ -129,6 +129,12 @@ class Span:
     def record_response_id(self, response_id: str) -> None:
         self.set_attribute("model.response_id", response_id)
 
+    def record_temperature(self, temperature: float) -> None:
+        self.set_attribute("model.temperature", temperature)
+
+    def record_max_tokens(self, max_tokens: int) -> None:
+        self.set_attribute("model.max_tokens", max_tokens)
+
     def record_cost(
         self,
         input_cost: float,
