@@ -1933,3 +1933,87 @@ def test_model_max_tokens_round_trips():
     restored = Trace.from_dict(trace.to_dict())
 
     assert restored.spans[0].attributes["model.max_tokens"] == 500
+
+
+def test_model_span_can_record_input():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_input("What is the capital of France?")
+
+    assert model.attributes["model.input"] == "What is the capital of France?"
+
+
+def test_model_input_is_serialized():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_input("What is the capital of France?")
+
+    data = model.to_dict()
+
+    assert data["attributes"]["model.input"] == "What is the capital of France?"
+
+
+def test_model_input_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_input("What is the capital of France?")
+
+    restored = Span.from_dict(model.to_dict())
+
+    assert restored.attributes["model.input"] == "What is the capital of France?"
+
+
+def test_model_span_can_record_output():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_output("Paris is the capital of France.")
+
+    assert model.attributes["model.output"] == "Paris is the capital of France."
+
+
+def test_model_output_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_output("Paris is the capital of France.")
+
+    restored = Span.from_dict(model.to_dict())
+
+    assert restored.attributes["model.output"] == "Paris is the capital of France."
+
+
+def test_model_span_can_record_request_id():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_request_id("request-123")
+
+    assert model.attributes["model.request_id"] == "request-123"

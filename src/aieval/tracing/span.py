@@ -111,6 +111,12 @@ class Span:
     def set_attribute(self, key: str, value: object) -> None:
         self.attributes[key] = value
 
+    def record_input(self, input_text: str) -> None:
+        self.set_attribute("model.input", input_text)
+
+    def record_output(self, output_text: str) -> None:
+        self.set_attribute("model.output", output_text)
+
     def record_token_usage(
         self,
         input_tokens: int,
@@ -128,6 +134,9 @@ class Span:
 
     def record_response_id(self, response_id: str) -> None:
         self.set_attribute("model.response_id", response_id)
+
+    def record_request_id(self, request_id: str) -> None:
+        self.set_attribute("model.request_id", request_id)
 
     def record_temperature(self, temperature: float) -> None:
         self.set_attribute("model.temperature", temperature)
