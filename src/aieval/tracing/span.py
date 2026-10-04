@@ -123,6 +123,11 @@ class Span:
             input_tokens + output_tokens,
         )
 
+    def record_finish_reason(self, finish_reason: str) -> None:
+        self.set_attribute("model.finish_reason", finish_reason)
+
+    def record_response_id(self, response_id: str) -> None:
+        self.set_attribute("model.response_id", response_id)
 
     def record_cost(
         self,

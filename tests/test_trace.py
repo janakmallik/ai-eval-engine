@@ -1753,3 +1753,96 @@ def test_trace_summary_total_cost_is_zero_without_costs():
     summary = trace.summary()
 
     assert summary["total_cost"] == 0.0
+
+
+def test_model_span_can_record_finish_reason():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_finish_reason("stop")
+
+    assert model.attributes["model.finish_reason"] == "stop"
+
+
+def test_model_finish_reason_is_serialized():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_finish_reason("stop")
+
+    data = trace.to_dict()
+
+    assert data["spans"][0]["attributes"]["model.finish_reason"] == "stop"
+
+
+def test_model_finish_reason_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_finish_reason("stop")
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.spans[0].attributes["model.finish_reason"] == "stop"
+
+
+def test_model_span_can_record_response_id():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_response_id("response-123")
+
+    assert model.attributes["model.response_id"] == "response-123"
+
+
+def test_model_response_id_is_serialized():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_response_id("response-123")
+
+    data = trace.to_dict()
+
+    assert data["spans"][0]["attributes"]["model.response_id"] == "response-123"
+
+
+def test_model_response_id_round_trips():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_response_id("response-123")
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.spans[0].attributes["model.response_id"] == "response-123"
+
+
+# response_id is now fully covered:
+# - ✅ Record it
+# - ✅ Store it as a span attribute
+# - ✅ Serialize it
+# - ✅ Restore it from serialized data
