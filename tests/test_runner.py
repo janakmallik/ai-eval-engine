@@ -1069,3 +1069,100 @@ def test_evaluate_dataset_retrieval_span_records_exception():
             enable_tracing=True,
             retriever=retrieve,
         )
+
+
+def test_evaluate_dataset_uses_model_span():
+    from aieval.tracing.trace import Trace
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return "Paris"
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert result.trace is not None
+
+    model_spans = [span for span in result.trace.spans if span.name == "model"]
+
+    assert len(model_spans) == 1
+
+    model_span = model_spans[0]
+
+    assert model_span.attributes["model.name"] == "model"
+    assert model_span.attributes["model.provider"] == "unknown"
+
+
+def test_evaluate_dataset_records_configured_model_metadata():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return "Paris"
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        model_name="gpt-5",
+        model_provider="openai",
+    )
+
+    assert result.trace is not None
+
+    model_spans = [span for span in result.trace.spans if span.name == "model"]
+
+    assert len(model_spans) == 1
+
+    model_span = model_spans[0]
+
+    assert model_span.attributes["model.name"] == "gpt-5"
+    assert model_span.attributes["model.provider"] == "openai"
+
+
+def test_evaluate_dataset_records_model_input_and_output():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return "Paris"
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert result.trace is not None
+
+    model_spans = [span for span in result.trace.spans if span.name == "model"]
+
+    assert len(model_spans) == 1
+
+    model_span = model_spans[0]
+
+    assert model_span.attributes["model.input"] == ("What is the capital of France?")
+    assert model_span.attributes["model.output"] == "Paris"

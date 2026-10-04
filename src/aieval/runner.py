@@ -16,6 +16,8 @@ def evaluate_dataset(
     enable_tracing: bool = False,
     retriever: Callable[[str, int], Iterable[object]] | None = None,
     retrieval_top_k: int = 5,
+    model_name: str = "model",
+    model_provider: str = "unknown",
 ) -> EvaluationRun:
 
     results: list[EvaluationResult] = []
@@ -72,8 +74,9 @@ def evaluate_dataset(
 
             try:
                 model_span = (
-                    trace.start_span(
-                        "model",
+                    trace.start_model(
+                        model=model_name,
+                        provider=model_provider,
                         parent_span_id=case_span.span_id,
                     )
                     if trace and case_span
@@ -81,12 +84,12 @@ def evaluate_dataset(
                 )
 
                 if model_span:
-                    model_span.set_attribute("model.input", case.input)
+                    model_span.record_input(case.input)
 
                     with model_span:
                         actual = model(case.input)
 
-                    model_span.set_attribute("model.output", actual)
+                    model_span.record_output(actual)
                 else:
                     actual = model(case.input)
 
