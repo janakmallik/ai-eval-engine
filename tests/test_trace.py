@@ -2147,3 +2147,22 @@ def test_trace_usage_round_trip():
         "output_cost": 0.002,
         "total_cost": 0.003,
     }
+
+
+def test_model_span_preserves_response_metadata_after_round_trip():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.set_attribute("model.finish_reason", "stop")
+    model.set_attribute("model.response_id", "response-123")
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    restored_model = next(span for span in restored.spans if span.name == "model")
+
+    assert restored_model.attributes["model.finish_reason"] == "stop"
+    assert restored_model.attributes["model.response_id"] == "response-123"

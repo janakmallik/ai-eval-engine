@@ -1193,7 +1193,6 @@ def test_evaluate_dataset_records_model_usage():
 
 
 from aieval.tracing.response import ModelResponse
-
 from aieval.tracing.usage import ModelUsage
 
 
@@ -1233,3 +1232,57 @@ def test_evaluate_dataset_records_model_usage_from_response():
     assert model_span.usage.input_cost == 0.001
     assert model_span.usage.output_cost == 0.002
     assert model_span.usage.total_cost == 0.003
+
+
+def test_evaluate_dataset_records_model_finish_reason():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return ModelResponse(
+            output="Paris",
+            finish_reason="stop",
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.finish_reason"] == "stop"
+
+
+def test_evaluate_dataset_records_model_response_id():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(prompt):
+        return ModelResponse(
+            output="Paris",
+            response_id="response-123",
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.response_id"] == "response-123"

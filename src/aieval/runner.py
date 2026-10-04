@@ -95,6 +95,13 @@ def evaluate_dataset(
 
                         if response.usage is not None:
                             model_span.record_usage(response.usage)
+
+                        if response.finish_reason is not None:
+                            model_span.record_finish_reason(response.finish_reason)
+
+                        if response.response_id is not None:
+                            model_span.record_response_id(response.response_id)
+
                     else:
                         actual = response
 
