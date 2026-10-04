@@ -2,10 +2,12 @@
 # started, when it ended (or that it hasn't), how long it took, and which parent it
 # belongs to — the building block of traces.
 
+import traceback
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from uuid import uuid4
-import traceback
+
+from aieval.tracing.usage import ModelUsage
 
 
 @dataclass
@@ -20,6 +22,7 @@ class Span:
     status_message: str | None = None
     attributes: dict[str, object] = field(default_factory=dict)
     events: list[dict[str, object]] = field(default_factory=list)
+    usage: ModelUsage | None = None
 
     @property
     def duration(self) -> float | None:
@@ -69,6 +72,7 @@ class Span:
             "status": self.status,
             "status_message": self.status_message,
             "attributes": self.attributes,
+            "usage": self.usage.to_dict() if self.usage is not None else None,
             "events": [
                 {
                     "name": event["name"],
@@ -106,6 +110,16 @@ class Span:
                 }
                 for event in data.get("events", [])
             ],
+            usage=(
+                ModelUsage(
+                    input_tokens=data["usage"]["input_tokens"],
+                    output_tokens=data["usage"]["output_tokens"],
+                    input_cost=data["usage"]["input_cost"],
+                    output_cost=data["usage"]["output_cost"],
+                )
+                if data.get("usage") is not None
+                else None
+            ),
         )
 
     def set_attribute(self, key: str, value: object) -> None:
@@ -127,6 +141,18 @@ class Span:
         self.set_attribute(
             "model.total_tokens",
             input_tokens + output_tokens,
+        )
+
+    def record_usage(self, usage: ModelUsage) -> None:
+        self.usage = usage
+
+        self.record_token_usage(
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+        )
+        self.record_cost(
+            input_cost=usage.input_cost,
+            output_cost=usage.output_cost,
         )
 
     def record_finish_reason(self, finish_reason: str) -> None:

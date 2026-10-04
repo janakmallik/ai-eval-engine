@@ -2017,3 +2017,133 @@ def test_model_span_can_record_request_id():
     model.record_request_id("request-123")
 
     assert model.attributes["model.request_id"] == "request-123"
+
+
+from aieval.tracing.usage import ModelUsage
+
+
+def test_model_span_can_record_usage_object():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    usage = ModelUsage(
+        input_tokens=100,
+        output_tokens=50,
+    )
+
+    model.record_usage(usage)
+
+    assert model.attributes["model.input_tokens"] == 100
+    assert model.attributes["model.output_tokens"] == 50
+    assert model.attributes["model.total_tokens"] == 150
+
+
+def test_model_span_records_usage_cost():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    usage = ModelUsage(
+        input_tokens=100,
+        output_tokens=50,
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+
+    model.record_usage(usage)
+
+    assert model.attributes["model.input_cost"] == 0.001
+    assert model.attributes["model.output_cost"] == 0.002
+    assert model.attributes["model.total_cost"] == 0.003
+
+
+def test_model_span_serializes_usage():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    usage = ModelUsage(
+        input_tokens=100,
+        output_tokens=50,
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+
+    model.record_usage(usage)
+
+    data = model.to_dict()
+
+    assert data["usage"] == {
+        "input_tokens": 100,
+        "output_tokens": 50,
+        "total_tokens": 150,
+        "input_cost": 0.001,
+        "output_cost": 0.002,
+        "total_cost": 0.003,
+    }
+
+
+def test_model_span_usage_round_trip():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    usage = ModelUsage(
+        input_tokens=100,
+        output_tokens=50,
+        input_cost=0.001,
+        output_cost=0.002,
+    )
+
+    model.record_usage(usage)
+
+    restored = Span.from_dict(model.to_dict())
+
+    assert restored.usage is not None
+    assert restored.usage.to_dict() == usage.to_dict()
+
+
+def test_trace_usage_round_trip():
+    trace = Trace()
+
+    model = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+    )
+
+    model.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.001,
+            output_cost=0.002,
+        )
+    )
+
+    data = trace.to_dict()
+    restored = Trace.from_dict(data)
+
+    restored_model = restored.spans[0]
+
+    assert restored_model.usage is not None
+    assert restored_model.usage.to_dict() == {
+        "input_tokens": 100,
+        "output_tokens": 50,
+        "total_tokens": 150,
+        "input_cost": 0.001,
+        "output_cost": 0.002,
+        "total_cost": 0.003,
+    }
