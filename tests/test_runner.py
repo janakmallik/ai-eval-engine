@@ -1570,3 +1570,44 @@ def test_evaluate_dataset_supports_retrieval_recall_evaluator():
     assert run.passed == 1
     assert run.failed == 0
     assert run.score == 1.0
+
+
+from aieval.evaluators.retrieval_precision import RetrievalPrecisionEvaluator
+
+
+def test_evaluate_dataset_supports_retrieval_precision_evaluator():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected=[
+                "Gradient descent is an optimization algorithm.",
+                "It is used to optimize model parameters.",
+            ],
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+        "It is used to optimize model parameters.",
+        "Python is a programming language.",
+    ]
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def model(text):
+        return "Gradient descent"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[RetrievalPrecisionEvaluator()],
+        retriever=retrieve,
+    )
+
+    assert run.total == 1
+    assert run.passed == 0
+    assert run.failed == 1
+    assert run.results[0].score == 2 / 3
+    assert run.results[0].passed is False
