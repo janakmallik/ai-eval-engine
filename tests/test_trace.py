@@ -2408,3 +2408,41 @@ def test_tool_span_records_result_count():
         span.record_tool_result(3)
 
     assert span.attributes["tool.result_count"] == 3
+
+
+def test_trace_records_metadata():
+    trace = Trace()
+
+    trace.set_metadata(
+        {
+            "model": "gpt-5",
+            "dataset": "qa-v1",
+            "environment": "test",
+        }
+    )
+
+    assert trace.metadata == {
+        "model": "gpt-5",
+        "dataset": "qa-v1",
+        "environment": "test",
+    }
+
+
+def test_trace_metadata_survives_round_trip():
+    trace = Trace()
+
+    trace.set_metadata(
+        {
+            "model": "gpt-5",
+            "dataset": "qa-v1",
+            "environment": "test",
+        }
+    )
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    assert restored.metadata == {
+        "model": "gpt-5",
+        "dataset": "qa-v1",
+        "environment": "test",
+    }

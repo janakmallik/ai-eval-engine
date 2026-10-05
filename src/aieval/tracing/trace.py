@@ -160,6 +160,12 @@ class Trace:
     def set_attribute(self, key: str, value: object) -> None:
         self.attributes[key] = value
 
+    def set_metadata(
+        self,
+        metadata: dict[str, object],
+    ) -> None:
+        self.metadata.update(metadata)
+
     def to_dict(self) -> dict:
         return {
             "trace_id": self.trace_id,

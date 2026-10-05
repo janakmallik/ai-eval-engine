@@ -26,7 +26,7 @@ def evaluate_dataset(
     total_cases = 0
     passed_cases = 0
     failed_cases = 0
-    trace = Trace() if enable_tracing else None
+    trace = Trace(metadata=metadata or {}) if enable_tracing else None
     root_span = trace.start_span("evaluation") if trace else None
 
     try:
@@ -228,8 +228,57 @@ def evaluate_dataset(
             failed_results = total_results - passed_results
             pass_rate = passed_results / total_results if total_results else 0.0
 
+            trace.set_attribute(
+                "evaluation.total_cases",
+                total_cases,
+            )
+            trace.set_attribute(
+                "evaluation.case_count",
+                total_cases,
+            )
+            trace.set_attribute(
+                "evaluation.passed_cases",
+                passed_cases,
+            )
+            trace.set_attribute(
+                "evaluation.failed_cases",
+                failed_cases,
+            )
+            trace.set_attribute(
+                "evaluation.total_results",
+                total_results,
+            )
+            trace.set_attribute(
+                "evaluation.passed",
+                passed_results,
+            )
+            trace.set_attribute(
+                "evaluation.failed",
+                failed_results,
+            )
+            trace.set_attribute(
+                "evaluation.passed_results",
+                passed_results,
+            )
+            trace.set_attribute(
+                "evaluation.failed_results",
+                failed_results,
+            )
+            trace.set_attribute(
+                "evaluation.pass_rate",
+                pass_rate,
+            )
+            trace.set_attribute(
+                "evaluation.status",
+                "ok",
+            )
+
             root_span.set_attribute(
                 "evaluation.total_cases",
+                total_cases,
+            )
+            root_span.set_attribute(
+                "evaluation.case_count",
                 total_cases,
             )
             root_span.set_attribute(
@@ -263,6 +312,10 @@ def evaluate_dataset(
             root_span.set_attribute(
                 "evaluation.pass_rate",
                 pass_rate,
+            )
+            root_span.set_attribute(
+                "evaluation.status",
+                "ok",
             )
 
             root_span.end()

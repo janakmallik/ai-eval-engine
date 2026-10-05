@@ -2071,3 +2071,80 @@ def test_evaluate_dataset_tool_span_is_error_after_exception():
         pass
 
     assert run is None
+
+
+def test_evaluate_dataset_copies_metadata_to_trace():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        metadata={
+            "model": "gpt-5",
+            "dataset": "capitals-v1",
+            "environment": "test",
+        },
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+    assert run.trace.metadata == {
+        "model": "gpt-5",
+        "dataset": "capitals-v1",
+        "environment": "test",
+    }
+
+
+def test_evaluate_dataset_records_trace_case_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        ),
+        EvalCase(
+            id="2",
+            input="What is the capital of Italy?",
+            expected="Rome",
+        ),
+    ]
+
+    run = evaluate_dataset(
+        model=lambda prompt: {
+            "What is the capital of France?": "Paris",
+            "What is the capital of Italy?": "Rome",
+        }[prompt],
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+    assert run.trace.attributes["evaluation.case_count"] == 2
+
+
+def test_evaluate_dataset_records_trace_status():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+    assert run.trace.attributes["evaluation.status"] == "ok"
