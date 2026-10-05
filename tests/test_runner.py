@@ -1496,3 +1496,38 @@ def test_evaluate_dataset_passes_retrieval_results_without_tracing():
 
     assert run.trace is None
     assert captured_context["context"].retrieved == retrieved_documents
+
+
+def test_evaluate_dataset_passes_retrieved_context_to_model():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+        "It is used to optimize model parameters.",
+    ]
+
+    captured = {}
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def model(text):
+        captured["input"] = text
+        return "Gradient descent"
+
+    evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        retriever=retrieve,
+    )
+
+    assert "What is gradient descent?" in captured["input"]
+    assert "Gradient descent is an optimization algorithm." in captured["input"]
+    assert "It is used to optimize model parameters." in captured["input"]

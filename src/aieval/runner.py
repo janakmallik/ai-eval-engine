@@ -84,11 +84,18 @@ def evaluate_dataset(
                     else None
                 )
 
+                if retriever is not None:
+                    model_input = "\n\n".join(
+                        [case.input, *[str(document) for document in retrieved]]
+                    )
+                else:
+                    model_input = case.input
+
                 if model_span:
-                    model_span.set_attribute("model.input", case.input)
+                    model_span.set_attribute("model.input", model_input)
 
                     with model_span:
-                        response = model(case.input)
+                        response = model(model_input)
 
                     if isinstance(response, ModelResponse):
                         actual = response.output
@@ -116,7 +123,7 @@ def evaluate_dataset(
 
                     model_span.set_attribute("model.output", actual)
                 else:
-                    response = model(case.input)
+                    response = model(model_input)
                     actual = (
                         response.output
                         if isinstance(response, ModelResponse)
