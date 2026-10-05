@@ -1340,3 +1340,30 @@ def test_evaluate_dataset_records_model_max_tokens():
     model_span = next(span for span in result.trace.spans if span.name == "model")
 
     assert model_span.attributes["model.max_tokens"] == 100
+
+
+def test_evaluate_dataset_records_model_request_id():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(_prompt):
+        return ModelResponse(
+            output="Paris",
+            request_id="request-123",
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.request_id"] == "request-123"

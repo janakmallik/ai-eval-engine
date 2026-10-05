@@ -71,6 +71,7 @@ def test_model_response_to_dict():
         "response_id": "response-123",
         "temperature": None,
         "max_tokens": None,
+        "request_id": None,
     }
 
 
@@ -130,6 +131,7 @@ def test_model_response_to_dict_without_usage():
         "response_id": "response-123",
         "temperature": None,
         "max_tokens": None,
+        "request_id": None,
     }
 
 
@@ -155,6 +157,7 @@ def test_model_response_to_dict_includes_temperature():
         "response_id": None,
         "temperature": 0.2,
         "max_tokens": None,
+        "request_id": None,
     }
 
 
@@ -220,6 +223,7 @@ def test_model_response_to_dict_includes_max_tokens():
         "response_id": None,
         "temperature": None,
         "max_tokens": 100,
+        "request_id": None,
     }
 
 
@@ -232,3 +236,40 @@ def test_model_response_round_trip_preserves_max_tokens():
     restored = ModelResponse.from_dict(response.to_dict())
 
     assert restored.max_tokens == 100
+
+
+def test_model_response_stores_request_id():
+    response = ModelResponse(
+        output="Paris",
+        request_id="request-123",
+    )
+
+    assert response.request_id == "request-123"
+
+
+def test_model_response_to_dict_includes_request_id():
+    response = ModelResponse(
+        output="Paris",
+        request_id="request-123",
+    )
+
+    assert response.to_dict() == {
+        "output": "Paris",
+        "usage": None,
+        "finish_reason": None,
+        "response_id": None,
+        "temperature": None,
+        "max_tokens": None,
+        "request_id": "request-123",
+    }
+
+
+def test_model_response_round_trip_preserves_request_id():
+    response = ModelResponse(
+        output="Paris",
+        request_id="request-123",
+    )
+
+    restored = ModelResponse.from_dict(response.to_dict())
+
+    assert restored.request_id == "request-123"

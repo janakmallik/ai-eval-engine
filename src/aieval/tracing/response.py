@@ -11,6 +11,7 @@ class ModelResponse:
     response_id: str | None = None
     temperature: float | None = None
     max_tokens: int | None = None
+    request_id: str | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -20,6 +21,7 @@ class ModelResponse:
             "response_id": self.response_id,
             "temperature": self.temperature,
             "max_tokens": self.max_tokens,
+            "request_id": self.request_id,
         }
 
     @classmethod
@@ -42,4 +44,5 @@ class ModelResponse:
             response_id=data.get("response_id"),
             temperature=data.get("temperature"),
             max_tokens=data.get("max_tokens"),
+            request_id=data.get("request_id"),
         )

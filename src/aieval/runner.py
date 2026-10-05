@@ -102,6 +102,9 @@ def evaluate_dataset(
                         if response.response_id is not None:
                             model_span.record_response_id(response.response_id)
 
+                        if response.request_id is not None:
+                            model_span.record_request_id(response.request_id)
+
                         if response.temperature is not None:
                             model_span.record_temperature(response.temperature)
 
