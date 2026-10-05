@@ -1,8 +1,8 @@
 from aieval.cli import format_regression_report, main
 from aieval.comparison import ComparisonResult
-from aieval.run import EvaluationRun
 from aieval.gate import GateResult
 from aieval.regression import RegressionResult
+from aieval.run import EvaluationRun
 
 
 def test_cli_help():
@@ -222,3 +222,193 @@ def test_parse_evaluator_thresholds():
         "exact_match": 0.01,
         "similarity": 0.10,
     }
+
+
+def test_cli_regression_works_with_real_json_reports(tmp_path):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    baseline_run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        metadata={
+            "model": "model_v1",
+            "dataset": "capitals-v1",
+        },
+    )
+
+    current_run = evaluate_dataset(
+        model=lambda _: "London",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        metadata={
+            "model": "model_v2",
+            "dataset": "capitals-v1",
+        },
+    )
+
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(baseline_run, baseline)
+    reporter.write(current_run, current)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+        ]
+    )
+
+    assert exit_code == 1
+
+
+def test_cli_regression_accepts_real_json_reports_with_threshold(tmp_path):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    baseline_run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    current_run = evaluate_dataset(
+        model=lambda _: "London",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(baseline_run, baseline)
+    reporter.write(current_run, current)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+            "--threshold",
+            "1.0",
+        ]
+    )
+
+    assert exit_code == 0
+
+
+def test_cli_regression_passes_when_runs_are_identical(tmp_path):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(run, baseline)
+    reporter.write(run, current)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+        ]
+    )
+
+    assert exit_code == 0
+
+
+def test_cli_regression_fails_when_evaluator_regresses(tmp_path):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    baseline_run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    current_run = evaluate_dataset(
+        model=lambda _: "London",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(baseline_run, baseline)
+    reporter.write(current_run, current)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+            "--evaluator-threshold",
+            "exact_match=0.0",
+        ]
+    )
+
+    assert exit_code == 1
