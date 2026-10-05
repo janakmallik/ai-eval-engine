@@ -126,6 +126,7 @@ def evaluate_dataset(
                 context = EvaluationContext(
                     case=case,
                     actual=actual,
+                    retrieved=retrieved if retriever is not None else None,
                 )
 
                 for evaluator in evaluators:

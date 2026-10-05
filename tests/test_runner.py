@@ -1367,3 +1367,52 @@ def test_evaluate_dataset_records_model_request_id():
     model_span = next(span for span in result.trace.spans if span.name == "model")
 
     assert model_span.attributes["model.request_id"] == "request-123"
+
+
+def test_evaluate_dataset_passes_retrieval_results_to_context():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+        "It is commonly used to train machine learning models.",
+    ]
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def model(text):
+        return "Gradient descent"
+
+    captured_context = {}
+
+    class ContextEvaluator:
+        name = "context"
+
+        def evaluate(self, context):
+            captured_context["context"] = context
+            return EvaluationResult(
+                case_id=context.case.id,
+                evaluator_name=self.name,
+                expected=context.case.expected,
+                actual=context.actual,
+                score=1.0,
+                passed=True,
+            )
+
+    evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ContextEvaluator()],
+        retriever=retrieve,
+        enable_tracing=True,
+    )
+
+    context = captured_context["context"]
+
+    assert context.retrieved == retrieved_documents

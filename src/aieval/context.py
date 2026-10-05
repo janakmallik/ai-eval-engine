@@ -7,4 +7,5 @@ from aieval.dataset import EvalCase
 class EvaluationContext:
     case: EvalCase
     actual: str
+    retrieved: list[object] | None = None
     metadata: dict[str, object] = field(default_factory=dict)
