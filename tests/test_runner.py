@@ -1416,3 +1416,83 @@ def test_evaluate_dataset_passes_retrieval_results_to_context():
     context = captured_context["context"]
 
     assert context.retrieved == retrieved_documents
+
+
+def test_evaluate_dataset_passes_retrieval_top_k_to_retriever():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    captured = {}
+
+    def retrieve(query, top_k):
+        captured["query"] = query
+        captured["top_k"] = top_k
+        return ["Gradient descent is an optimization algorithm."]
+
+    def model(text):
+        return "Gradient descent"
+
+    evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        retriever=retrieve,
+        retrieval_top_k=10,
+        enable_tracing=True,
+    )
+
+    assert captured["query"] == "What is gradient descent?"
+    assert captured["top_k"] == 10
+
+
+def test_evaluate_dataset_passes_retrieval_results_without_tracing():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+        "It is used to optimize model parameters.",
+    ]
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def model(text):
+        return "Gradient descent"
+
+    captured_context = {}
+
+    class ContextEvaluator:
+        name = "context"
+
+        def evaluate(self, context):
+            captured_context["context"] = context
+            return EvaluationResult(
+                case_id=context.case.id,
+                evaluator_name=self.name,
+                expected=context.case.expected,
+                actual=context.actual,
+                score=1.0,
+                passed=True,
+            )
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ContextEvaluator()],
+        retriever=retrieve,
+        enable_tracing=False,
+    )
+
+    assert run.trace is None
+    assert captured_context["context"].retrieved == retrieved_documents
