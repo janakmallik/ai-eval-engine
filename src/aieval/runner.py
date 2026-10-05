@@ -107,6 +107,11 @@ def evaluate_dataset(
                         tool_span.record_tool_result(
                             result_count=result_count,
                         )
+
+                        tool_span.set_attribute(
+                            "tool.status",
+                            "ok",
+                        )
                 else:
                     tool_response = tool(case.input)
 

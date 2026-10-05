@@ -2238,3 +2238,61 @@ def test_evaluate_dataset_tool_response_infers_result_count():
     tool_span = next(span for span in run.trace.spans if span.name == "tool")
 
     assert tool_span.attributes["tool.result_count"] == 2
+
+
+def test_evaluate_dataset_tool_response_records_output_and_status():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        return ToolResponse(
+            output=["Paris", "London"],
+            result_count=2,
+        )
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        tool=tool,
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.output"] == ["Paris", "London"]
+    assert tool_span.attributes["tool.result_count"] == 2
+    assert tool_span.attributes["tool.status"] == "ok"
+
+
+def test_evaluate_dataset_tool_exception_records_error_status():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        raise RuntimeError("tool failed")
+
+    try:
+        evaluate_dataset(
+            model=lambda _: "Paris",
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            tool=tool,
+            enable_tracing=True,
+        )
+    except RuntimeError:
+        pass
+    else:
+        raise AssertionError("Expected RuntimeError")
