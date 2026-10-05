@@ -2394,3 +2394,17 @@ def test_model_span_restores_token_usage():
 
     assert model_span.usage.input_tokens == 100
     assert model_span.usage.output_tokens == 50
+
+
+def test_tool_span_records_result_count():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    with span:
+        span.record_tool_result(3)
+
+    assert span.attributes["tool.result_count"] == 3
