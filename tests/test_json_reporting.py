@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from aieval.reporting.json import JsonReporter
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
@@ -378,7 +380,7 @@ def test_json_reporter_includes_trace_summary(tmp_path):
         "error_count": 0,
         "duration": trace.duration,
         "completed_span_count": 2,
-        "total_duration": 0.0,
+        "total_duration": pytest.approx(root.duration + model.duration),
         "total_cost": 0.0,
         "spans": [
             {
