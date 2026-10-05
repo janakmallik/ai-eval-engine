@@ -1531,3 +1531,42 @@ def test_evaluate_dataset_passes_retrieved_context_to_model():
     assert "What is gradient descent?" in captured["input"]
     assert "Gradient descent is an optimization algorithm." in captured["input"]
     assert "It is used to optimize model parameters." in captured["input"]
+
+
+def test_evaluate_dataset_supports_retrieval_recall_evaluator():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected=[
+                "optimization algorithm",
+                "model parameters",
+            ],
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+        "It is used to optimize model parameters.",
+    ]
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def model(text):
+        return "Gradient descent"
+
+    from aieval.evaluators.retrieval_recall import RetrievalRecallEvaluator
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[RetrievalRecallEvaluator()],
+        retriever=retrieve,
+        enable_tracing=True,
+    )
+
+    assert run.total == 1
+    assert run.passed == 1
+    assert run.failed == 0
+    assert run.score == 1.0
