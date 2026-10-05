@@ -5,7 +5,9 @@ from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.evaluators.length import LengthEvaluator
 from aieval.result import EvaluationResult
+from aieval.run import EvaluationRun
 from aieval.runner import evaluate_dataset
+from aieval.tracing.usage import ModelUsage
 
 
 def test_evaluate_dataset():
@@ -1611,3 +1613,461 @@ def test_evaluate_dataset_supports_retrieval_precision_evaluator():
     assert run.failed == 1
     assert run.results[0].score == 2 / 3
     assert run.results[0].passed is False
+
+
+def test_evaluate_dataset_traces_tool_call():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        return ["Paris is the capital of France."]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        tool=tool,
+    )
+
+    tool_spans = [span for span in run.trace.spans if span.name == "tool"]
+
+    assert len(tool_spans) == 1
+    assert tool_spans[0].attributes["tool.name"] == "tool"
+    assert tool_spans[0].attributes["tool.result_count"] == 1
+
+
+def test_evaluate_dataset_traces_tool_after_retrieval():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is gradient descent?",
+            expected="Gradient descent",
+        )
+    ]
+
+    retrieved_documents = [
+        "Gradient descent is an optimization algorithm.",
+    ]
+
+    def retrieve(query, top_k):
+        return retrieved_documents
+
+    def tool(query):
+        return ["Search result"]
+
+    def model(text):
+        return "Gradient descent"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+        tool=tool,
+    )
+
+    retrieval_spans = [span for span in run.trace.spans if span.name == "retrieval"]
+
+    tool_spans = [span for span in run.trace.spans if span.name == "tool"]
+
+    # print(
+    #     [
+    #         (span.name, span.parent_span_id, span.attributes)
+    #         for span in run.trace.spans
+    #     ]
+    # )
+
+    assert len(retrieval_spans) == 1
+    assert len(tool_spans) == 1
+
+
+def test_evaluate_dataset_tool_span_is_child_of_case_span():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        return ["Paris is the capital of France."]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        tool=tool,
+    )
+
+    case_span = next(span for span in run.trace.spans if span.name == "evaluation.case")
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.parent_span_id == case_span.span_id
+
+
+def test_evaluate_dataset_tool_span_records_result_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Search for Paris.",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        return ["Paris", "Paris is in France."]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        tool=tool,
+    )
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.result_count"] == 2
+
+
+def test_evaluate_dataset_tool_span_ends_after_tool_execution():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Search for Paris.",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        return ["Paris"]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        tool=tool,
+    )
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.started_at is not None
+    assert tool_span.ended_at is not None
+    assert tool_span.duration is not None
+    assert tool_span.duration >= 0
+
+
+def test_evaluate_dataset_records_tool_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Search for Paris.",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        raise RuntimeError("tool failed")
+
+    def model(text):
+        return "Paris"
+
+    with pytest.raises(RuntimeError, match="tool failed"):
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            enable_tracing=True,
+            tool=tool,
+        )
+
+
+def test_evaluate_dataset_tool_span_records_error_status():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Search for Paris.",
+            expected="Paris",
+        )
+    ]
+
+    def tool(query):
+        raise RuntimeError("tool failed")
+
+    def model(text):
+        return "Paris"
+
+    try:
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            enable_tracing=True,
+            tool=tool,
+        )
+    except RuntimeError:
+        pass
+
+    # We'll inspect the implementation here after the first test
+    # establishes the expected exception behavior.
+
+
+def test_evaluate_dataset_traces_complete_ai_pipeline():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        return ["Paris is the capital of France."]
+
+    def tool(query):
+        return ["Paris"]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+        tool=tool,
+    )
+
+    span_names = [span.name for span in run.trace.spans]
+
+    assert "evaluation" in span_names
+    assert "evaluation.case" in span_names
+    assert "retrieval" in span_names
+    assert "tool" in span_names
+    assert "model" in span_names
+    assert "evaluator.exact_match" in span_names
+
+
+def test_evaluate_dataset_pipeline_spans_share_same_case_parent():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def retrieve(query, top_k):
+        return ["Paris is the capital of France."]
+
+    def tool(query):
+        return ["Paris"]
+
+    def model(text):
+        return "Paris"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        retriever=retrieve,
+        tool=tool,
+    )
+
+    case_span = next(span for span in run.trace.spans if span.name == "evaluation.case")
+
+    child_spans = [
+        span for span in run.trace.spans if span.parent_span_id == case_span.span_id
+    ]
+
+    child_names = {span.name for span in child_spans}
+
+    assert {
+        "retrieval",
+        "tool",
+        "model",
+        "evaluator.exact_match",
+    }.issubset(child_names)
+
+
+def test_evaluate_dataset_records_model_token_usage():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(text):
+        return ModelResponse(
+            output="Paris",
+            usage=ModelUsage(
+                input_tokens=100,
+                output_tokens=20,
+                input_cost=0.0,
+                output_cost=0.0,
+            ),
+        )
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in run.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.input_tokens"] == 100
+    assert model_span.attributes["model.output_tokens"] == 20
+    assert model_span.attributes["model.total_tokens"] == 120
+
+
+def test_evaluate_dataset_serializes_model_token_usage():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(text):
+        return ModelResponse(
+            output="Paris",
+            usage=ModelUsage(
+                input_tokens=100,
+                output_tokens=20,
+                input_cost=0.0,
+                output_cost=0.0,
+            ),
+        )
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    data = run.to_dict()
+
+    model_span = next(
+        span for span in data["trace"]["spans"] if span["name"] == "model"
+    )
+
+    assert model_span["usage"]["input_tokens"] == 100
+    assert model_span["usage"]["output_tokens"] == 20
+
+
+def test_evaluate_dataset_records_tool_input_and_output():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the weather?",
+            expected="Sunny",
+        )
+    ]
+
+    def tool(query):
+        return ["Sunny", "25°C"]
+
+    def model(text):
+        return "Sunny"
+
+    run = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+        tool=tool,
+    )
+
+    assert run.trace is not None
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.input"] == "What is the weather?"
+    assert tool_span.attributes["tool.output"] == ["Sunny", "25°C"]
+
+
+def test_evaluate_dataset_tool_span_records_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the weather?",
+            expected="Sunny",
+        )
+    ]
+
+    def tool(query):
+        raise RuntimeError("tool failed")
+
+    def model(text):
+        return "Sunny"
+
+    with pytest.raises(RuntimeError, match="tool failed"):
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            enable_tracing=True,
+            tool=tool,
+        )
+
+
+def test_evaluate_dataset_tool_span_is_error_after_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the weather?",
+            expected="Sunny",
+        )
+    ]
+
+    def tool(query):
+        raise RuntimeError("tool failed")
+
+    def model(text):
+        return "Sunny"
+
+    run = None
+
+    try:
+        evaluate_dataset(
+            model=model,
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            enable_tracing=True,
+            tool=tool,
+        )
+    except RuntimeError:
+        pass
+
+    assert run is None

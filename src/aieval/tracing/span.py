@@ -182,6 +182,9 @@ class Span:
     def record_retrieval_result(self, result_count: int) -> None:
         self.set_attribute("retrieval.result_count", result_count)
 
+    def record_tool_result(self, result_count: int) -> None:
+        self.set_attribute("tool.result_count", result_count)
+
     # once a span has ended, subsequent span mutations such as adding events should be ignored.
     def add_event(
         self,

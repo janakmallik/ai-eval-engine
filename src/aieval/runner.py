@@ -17,6 +17,7 @@ def evaluate_dataset(
     enable_tracing: bool = False,
     retriever: Callable[[str, int], Iterable[object]] | None = None,
     retrieval_top_k: int = 5,
+    tool: Callable[[str], Iterable[object]] | None = None,
     model_name: str = "model",
     model_provider: str = "unknown",
 ) -> EvaluationRun:
@@ -72,6 +73,30 @@ def evaluate_dataset(
                         case.input,
                         retrieval_top_k,
                     )
+
+            if tool is not None:
+                tool_span = (
+                    trace.start_tool(
+                        tool="tool",
+                        parent_span_id=case_span.span_id,
+                    )
+                    if trace and case_span
+                    else None
+                )
+
+                if tool_span:
+                    tool_span.set_attribute("tool.input", case.input)
+
+                    with tool_span:
+                        tool_result = tool(case.input)
+
+                        tool_span.set_attribute("tool.output", tool_result)
+
+                        tool_span.record_tool_result(
+                            result_count=len(tool_result),
+                        )
+                else:
+                    tool_result = tool(case.input)
 
             try:
                 model_span = (

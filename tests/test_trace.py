@@ -2,6 +2,7 @@ from datetime import UTC, datetime
 
 from aieval.tracing.span import Span
 from aieval.tracing.trace import Trace
+from aieval.tracing.usage import ModelUsage
 
 
 def test_trace_has_id():
@@ -2166,3 +2167,230 @@ def test_model_span_preserves_response_metadata_after_round_trip():
 
     assert restored_model.attributes["model.finish_reason"] == "stop"
     assert restored_model.attributes["model.response_id"] == "response-123"
+
+
+def test_trace_can_create_tool_span():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    assert span.name == "tool"
+    assert span.parent_span_id is None
+    assert span.attributes["tool.name"] == "web_search"
+    assert span.started_at is not None
+    assert span.ended_at is None
+
+
+def test_tool_span_can_record_result():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    span.record_tool_result(
+        result_count=3,
+    )
+
+    assert span.attributes["tool.result_count"] == 3
+
+
+def test_tool_span_can_be_nested_under_parent_span():
+    trace = Trace()
+
+    parent = trace.start_span("evaluation.case")
+
+    tool_span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=parent.span_id,
+    )
+
+    assert tool_span.parent_span_id == parent.span_id
+    assert tool_span.span_id != parent.span_id
+    assert tool_span in trace.spans
+
+    parent.end()
+    tool_span.end()
+
+
+def test_tool_span_records_duration():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    span.end()
+
+    assert span.started_at is not None
+    assert span.ended_at is not None
+    assert span.duration is not None
+    assert span.duration >= 0
+
+
+def test_tool_span_records_tool_name():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="calculator",
+        parent_span_id=None,
+    )
+
+    assert span.attributes["tool.name"] == "calculator"
+
+
+def test_tool_span_can_record_multiple_results():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    span.record_tool_result(result_count=5)
+
+    assert span.attributes["tool.result_count"] == 5
+
+
+def test_tool_span_is_serialized():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    span.record_tool_result(result_count=3)
+    span.end()
+
+    data = trace.to_dict()
+
+    tool_spans = [item for item in data["spans"] if item["name"] == "tool"]
+
+    assert len(tool_spans) == 1
+    assert tool_spans[0]["attributes"]["tool.name"] == "web_search"
+    assert tool_spans[0]["attributes"]["tool.result_count"] == 3
+
+
+def test_tool_span_is_restored_from_dict():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    span.record_tool_result(result_count=3)
+    span.end()
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    tool_spans = [item for item in restored.spans if item.name == "tool"]
+
+    assert len(tool_spans) == 1
+    assert tool_spans[0].attributes["tool.name"] == "web_search"
+    assert tool_spans[0].attributes["tool.result_count"] == 3
+
+
+def test_nested_tool_span_is_restored_with_parent():
+    trace = Trace()
+
+    parent = trace.start_span("evaluation.case")
+
+    tool_span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=parent.span_id,
+    )
+
+    tool_span.end()
+    parent.end()
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    restored_tool = next(span for span in restored.spans if span.name == "tool")
+
+    restored_parent = next(
+        span for span in restored.spans if span.name == "evaluation.case"
+    )
+
+    assert restored_tool.parent_span_id == restored_parent.span_id
+
+
+def test_model_span_records_token_usage():
+    trace = Trace()
+
+    span = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+        parent_span_id=None,
+    )
+
+    span.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.0,
+            output_cost=0.0,
+        )
+    )
+
+    assert span.attributes["model.input_tokens"] == 100
+    assert span.attributes["model.output_tokens"] == 50
+    assert span.attributes["model.total_tokens"] == 150
+
+
+def test_model_span_serializes_token_usage():
+    trace = Trace()
+
+    span = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+        parent_span_id=None,
+    )
+
+    span.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.0,
+            output_cost=0.0,
+        )
+    )
+
+    data = trace.to_dict()
+
+    model_span = next(item for item in data["spans"] if item["name"] == "model")
+
+    assert model_span["usage"]["input_tokens"] == 100
+    assert model_span["usage"]["output_tokens"] == 50
+
+
+def test_model_span_restores_token_usage():
+    trace = Trace()
+
+    span = trace.start_model(
+        model="test-model",
+        provider="test-provider",
+        parent_span_id=None,
+    )
+
+    span.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.0,
+            output_cost=0.0,
+        )
+    )
+
+    restored = Trace.from_dict(trace.to_dict())
+
+    model_span = next(span for span in restored.spans if span.name == "model")
+
+    assert model_span.usage.input_tokens == 100
+    assert model_span.usage.output_tokens == 50

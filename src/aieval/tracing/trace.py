@@ -125,6 +125,20 @@ class Trace:
 
         return span
 
+    def start_tool(
+        self,
+        tool: str,
+        parent_span_id: str | None = None,
+    ) -> Span:
+        span = self.start_span(
+            "tool",
+            parent_span_id=parent_span_id,
+        )
+
+        span.set_attribute("tool.name", tool)
+
+        return span
+
     def start_model(
         self,
         model: str,
