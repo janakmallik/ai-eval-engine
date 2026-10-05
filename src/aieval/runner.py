@@ -102,6 +102,12 @@ def evaluate_dataset(
                         if response.response_id is not None:
                             model_span.record_response_id(response.response_id)
 
+                        if response.temperature is not None:
+                            model_span.record_temperature(response.temperature)
+
+                        if response.max_tokens is not None:
+                            model_span.record_max_tokens(response.max_tokens)
+
                     else:
                         actual = response
 

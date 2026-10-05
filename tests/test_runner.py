@@ -1286,3 +1286,57 @@ def test_evaluate_dataset_records_model_response_id():
     model_span = next(span for span in result.trace.spans if span.name == "model")
 
     assert model_span.attributes["model.response_id"] == "response-123"
+
+
+def test_evaluate_dataset_records_model_temperature():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(_prompt):
+        return ModelResponse(
+            output="Paris",
+            temperature=0.2,
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.temperature"] == 0.2
+
+
+def test_evaluate_dataset_records_model_max_tokens():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    def model(_prompt):
+        return ModelResponse(
+            output="Paris",
+            max_tokens=100,
+        )
+
+    result = evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    model_span = next(span for span in result.trace.spans if span.name == "model")
+
+    assert model_span.attributes["model.max_tokens"] == 100

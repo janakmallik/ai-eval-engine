@@ -9,6 +9,8 @@ class ModelResponse:
     usage: ModelUsage | None = None
     finish_reason: str | None = None
     response_id: str | None = None
+    temperature: float | None = None
+    max_tokens: int | None = None
 
     def to_dict(self) -> dict:
         return {
@@ -16,6 +18,8 @@ class ModelResponse:
             "usage": self.usage.to_dict() if self.usage is not None else None,
             "finish_reason": self.finish_reason,
             "response_id": self.response_id,
+            "temperature": self.temperature,
+            "max_tokens": self.max_tokens,
         }
 
     @classmethod
@@ -36,4 +40,6 @@ class ModelResponse:
             ),
             finish_reason=data.get("finish_reason"),
             response_id=data.get("response_id"),
+            temperature=data.get("temperature"),
+            max_tokens=data.get("max_tokens"),
         )
