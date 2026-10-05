@@ -7,6 +7,7 @@ from aieval.evaluators.length import LengthEvaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.runner import evaluate_dataset
+from aieval.tracing.tool import ToolResponse
 from aieval.tracing.usage import ModelUsage
 
 
@@ -2148,3 +2149,92 @@ def test_evaluate_dataset_records_trace_status():
 
     assert run.trace is not None
     assert run.trace.attributes["evaluation.status"] == "ok"
+
+
+def test_evaluate_dataset_tool_response_uses_structured_result_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        return ToolResponse(
+            output=["Paris", "France"],
+            result_count=2,
+        )
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        tool=tool,
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.result_count"] == 2
+
+
+def test_evaluate_dataset_tool_response_can_override_inferred_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        return ToolResponse(
+            output=["Paris", "France"],
+            result_count=10,
+        )
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        tool=tool,
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.result_count"] == 10
+
+
+def test_evaluate_dataset_tool_response_infers_result_count():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        return ToolResponse(
+            output=["Paris", "France"],
+        )
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        tool=tool,
+        enable_tracing=True,
+    )
+
+    assert run.trace is not None
+
+    tool_span = next(span for span in run.trace.spans if span.name == "tool")
+
+    assert tool_span.attributes["tool.result_count"] == 2

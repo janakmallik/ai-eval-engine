@@ -6,6 +6,7 @@ from aieval.evaluators.base import Evaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.tracing.response import ModelResponse
+from aieval.tracing.tool import ToolResponse
 from aieval.tracing.trace import Trace
 
 
@@ -88,15 +89,31 @@ def evaluate_dataset(
                     tool_span.set_attribute("tool.input", case.input)
 
                     with tool_span:
-                        tool_result = tool(case.input)
+                        tool_response = tool(case.input)
+
+                        if isinstance(tool_response, ToolResponse):
+                            tool_result = tool_response.output
+
+                            if tool_response.result_count is not None:
+                                result_count = tool_response.result_count
+                            else:
+                                result_count = len(tool_result)
+                        else:
+                            tool_result = tool_response
+                            result_count = len(tool_result)
 
                         tool_span.set_attribute("tool.output", tool_result)
 
                         tool_span.record_tool_result(
-                            result_count=len(tool_result),
+                            result_count=result_count,
                         )
                 else:
-                    tool_result = tool(case.input)
+                    tool_response = tool(case.input)
+
+                    if isinstance(tool_response, ToolResponse):
+                        tool_result = tool_response.output
+                    else:
+                        tool_result = tool_response
 
             try:
                 model_span = (

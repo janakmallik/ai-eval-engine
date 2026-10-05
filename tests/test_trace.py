@@ -1,6 +1,7 @@
 from datetime import UTC, datetime
 
 from aieval.tracing.span import Span
+from aieval.tracing.tool import ToolResponse
 from aieval.tracing.trace import Trace
 from aieval.tracing.usage import ModelUsage
 
@@ -2446,3 +2447,22 @@ def test_trace_metadata_survives_round_trip():
         "dataset": "qa-v1",
         "environment": "test",
     }
+
+
+def test_tool_response_stores_output():
+    response = ToolResponse(
+        output=["Paris", "London"],
+        result_count=2,
+    )
+
+    assert response.output == ["Paris", "London"]
+    assert response.result_count == 2
+
+
+def test_tool_response_allows_missing_result_count():
+    response = ToolResponse(
+        output="Paris",
+    )
+
+    assert response.output == "Paris"
+    assert response.result_count is None
