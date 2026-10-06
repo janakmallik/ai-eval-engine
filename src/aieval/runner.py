@@ -1,5 +1,6 @@
 from collections.abc import Callable, Iterable
 
+from aieval.config import EvaluationConfig
 from aieval.context import EvaluationContext
 from aieval.dataset import EvalCase
 from aieval.evaluators.base import Evaluator
@@ -346,4 +347,25 @@ def evaluate_dataset(
         results,
         metadata=metadata or {},
         trace=trace,
+    )
+
+
+def evaluate_with_config(
+    config: EvaluationConfig,
+    model: Callable[[str], str],
+    dataset: Iterable[EvalCase],
+    retriever: Callable[[str, int], Iterable[object]] | None = None,
+    tool: Callable[[str], Iterable[object]] | None = None,
+) -> EvaluationRun:
+    return evaluate_dataset(
+        model=model,
+        dataset=dataset,
+        evaluators=config.evaluators,
+        metadata=dict(config.metadata),
+        enable_tracing=config.enable_tracing,
+        retriever=retriever,
+        retrieval_top_k=config.retrieval_top_k,
+        tool=tool,
+        model_name=config.model,
+        model_provider=config.model_provider,
     )

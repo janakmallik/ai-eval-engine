@@ -1,12 +1,13 @@
 import pytest
 
+from aieval.config import EvaluationConfig
 from aieval.dataset import EvalCase, EvalDataset
 from aieval.evaluators.contains import ContainsEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.evaluators.length import LengthEvaluator
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-from aieval.runner import evaluate_dataset
+from aieval.runner import evaluate_dataset, evaluate_with_config
 from aieval.tracing.tool import ToolResponse
 from aieval.tracing.usage import ModelUsage
 
@@ -2291,6 +2292,7 @@ def test_evaluate_dataset_tool_span_records_error_status():
     except RuntimeError:
         pass
 
+
 # Does a tool failure remain a real application failure, rather than being
 # silently converted into an evaluation result? We want yes.
 def test_evaluate_dataset_tool_failure_propagates_exception():
@@ -2313,3 +2315,204 @@ def test_evaluate_dataset_tool_failure_propagates_exception():
             tool=tool,
             enable_tracing=True,
         )
+
+
+def test_evaluate_with_config_uses_config_evaluators():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert result.total == 1
+    assert result.passed == 1
+
+
+def test_evaluate_with_config_uses_config_metadata():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+        metadata={"environment": "test"},
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert result.metadata["environment"] == "test"
+
+
+def test_evaluate_with_config_enables_tracing_from_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert result.trace is not None
+
+
+def test_evaluate_with_config_disables_tracing_by_default():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert result.trace is None
+
+
+def test_evaluate_with_config_uses_model_identity_from_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+        model_provider="openai",
+        enable_tracing=True,
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert result.trace is not None
+
+    model_spans = [span for span in result.trace.spans if span.name == "model"]
+
+    assert model_spans[0].attributes["model.name"] == "qa-model"
+    assert model_spans[0].attributes["model.provider"] == "openai"
+
+
+def test_evaluate_with_config_uses_retrieval_top_k():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+        retrieval_top_k=10,
+        enable_tracing=True,
+    )
+
+    captured = {}
+
+    def retriever(query, top_k):
+        captured["query"] = query
+        captured["top_k"] = top_k
+        return []
+
+    evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+        retriever=retriever,
+    )
+
+    assert captured["top_k"] == 10
+
+
+def test_evaluate_with_config_passes_config_metadata_without_mutating_it():
+    metadata = {"environment": "test"}
+
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+        metadata=metadata,
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    result.metadata["environment"] = "production"
+
+    assert config.metadata["environment"] == "test"
+
+
+def test_evaluate_with_config_returns_evaluation_run():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    result = evaluate_with_config(
+        config=config,
+        model=lambda value: value,
+        dataset=[
+            EvalCase(
+                id="1",
+                input="hello",
+                expected="hello",
+            )
+        ],
+    )
+
+    assert isinstance(result, EvaluationRun)
