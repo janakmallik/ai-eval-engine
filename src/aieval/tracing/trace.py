@@ -152,6 +152,13 @@ class Trace:
 
             lines.append(f"{prefix}{connector}{span.name} [{status}] {duration}")
 
+            attribute_prefix = (
+                prefix if is_root else prefix + ("    " if is_last else "│   ")
+            )
+
+            for key, value in span.attributes.items():
+                lines.append(f"{attribute_prefix}    {key}: {value}")
+
             child_prefix = (
                 prefix if is_root else prefix + ("    " if is_last else "│   ")
             )

@@ -1,8 +1,12 @@
 from aieval.cli import format_regression_report, main
 from aieval.comparison import ComparisonResult
+from aieval.dataset import EvalCase
+from aieval.evaluators.exact_match import ExactMatchEvaluator
 from aieval.gate import GateResult
 from aieval.regression import RegressionResult
+from aieval.reporting.json import JsonReporter
 from aieval.run import EvaluationRun
+from aieval.runner import evaluate_dataset
 
 
 def test_cli_help():
@@ -225,10 +229,6 @@ def test_parse_evaluator_thresholds():
 
 
 def test_cli_regression_works_with_real_json_reports(tmp_path):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -279,10 +279,6 @@ def test_cli_regression_works_with_real_json_reports(tmp_path):
 
 
 def test_cli_regression_accepts_real_json_reports_with_threshold(tmp_path):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -327,10 +323,6 @@ def test_cli_regression_accepts_real_json_reports_with_threshold(tmp_path):
 
 
 def test_cli_regression_passes_when_runs_are_identical(tmp_path):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -367,10 +359,6 @@ def test_cli_regression_passes_when_runs_are_identical(tmp_path):
 
 
 def test_cli_regression_fails_when_evaluator_regresses(tmp_path):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -413,6 +401,7 @@ def test_cli_regression_fails_when_evaluator_regresses(tmp_path):
 
     assert exit_code == 1
 
+
 # Together they verify: (1) the argument parser works, (2) the command renders
 # a trace tree when tracing data exists, and (3) it prints a friendly message
 # when there's no trace data.
@@ -435,10 +424,6 @@ def test_cli_trace_command_accepts_report_path():
 
 
 def test_cli_trace_command_renders_trace_tree(tmp_path, capsys):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -476,10 +461,6 @@ def test_cli_trace_command_renders_trace_tree(tmp_path, capsys):
 
 
 def test_cli_trace_command_works_without_trace(tmp_path, capsys):
-    from aieval.dataset import EvalCase
-    from aieval.evaluators.exact_match import ExactMatchEvaluator
-    from aieval.reporting.json import JsonReporter
-    from aieval.runner import evaluate_dataset
 
     dataset = [
         EvalCase(
@@ -510,4 +491,43 @@ def test_cli_trace_command_works_without_trace(tmp_path, capsys):
 
     assert exit_code == 0
     assert "No trace data available." in captured.out
+
+
 # end
+def test_cli_trace_command_renders_span_attributes(tmp_path, capsys):
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        metadata={
+            "model": "test-model",
+            "dataset": "capitals-v1",
+        },
+        enable_tracing=True,
+    )
+
+    report = tmp_path / "run.json"
+    JsonReporter().write(run, report)
+
+    exit_code = main(
+        [
+            "trace",
+            "--input",
+            str(report),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "model.input:" in captured.out
+    assert "model.output:" in captured.out
