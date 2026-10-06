@@ -412,3 +412,102 @@ def test_cli_regression_fails_when_evaluator_regresses(tmp_path):
     )
 
     assert exit_code == 1
+
+# Together they verify: (1) the argument parser works, (2) the command renders
+# a trace tree when tracing data exists, and (3) it prints a friendly message
+# when there's no trace data.
+# start
+def test_cli_trace_command_accepts_report_path():
+    from aieval.cli import build_parser
+
+    parser = build_parser()
+
+    args = parser.parse_args(
+        [
+            "trace",
+            "--input",
+            "run.json",
+        ]
+    )
+
+    assert args.command == "trace"
+    assert args.input == "run.json"
+
+
+def test_cli_trace_command_renders_trace_tree(tmp_path, capsys):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="What is the capital of France?",
+            expected="Paris",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "Paris",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+        enable_tracing=True,
+    )
+
+    report = tmp_path / "run.json"
+    JsonReporter().write(run, report)
+
+    exit_code = main(
+        [
+            "trace",
+            "--input",
+            str(report),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "evaluation [" in captured.out
+    assert "evaluation.case [" in captured.out
+    assert "model [" in captured.out
+    assert "evaluator.exact_match [" in captured.out
+
+
+def test_cli_trace_command_works_without_trace(tmp_path, capsys):
+    from aieval.dataset import EvalCase
+    from aieval.evaluators.exact_match import ExactMatchEvaluator
+    from aieval.reporting.json import JsonReporter
+    from aieval.runner import evaluate_dataset
+
+    dataset = [
+        EvalCase(
+            id="1",
+            input="hello",
+            expected="hello",
+        )
+    ]
+
+    run = evaluate_dataset(
+        model=lambda _: "hello",
+        dataset=dataset,
+        evaluators=[ExactMatchEvaluator()],
+    )
+
+    report = tmp_path / "run.json"
+    JsonReporter().write(run, report)
+
+    exit_code = main(
+        [
+            "trace",
+            "--input",
+            str(report),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "No trace data available." in captured.out
+# end

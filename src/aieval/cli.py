@@ -50,6 +50,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="Evaluator-specific threshold in the form NAME=VALUE.",
     )
 
+    trace_parser = subparsers.add_parser(
+        "trace",
+        help="Display the trace tree from an evaluation JSON.",
+    )
+
+    trace_parser.add_argument(
+        "--input",
+        required=True,
+        help="Path to the evaluation JSON.",
+    )
+
     return parser
 
 
@@ -105,6 +116,17 @@ def main(args: list[str] | None = None) -> int:
         )
 
         return gate.exit_code(gate_result)
+
+    if parsed_args.command == "trace":
+        reporter = JsonReporter()
+        run = reporter.read(parsed_args.input)
+
+        if run.trace is None:
+            print("No trace data available.")
+        else:
+            print(run.trace.render_span_tree())
+
+        return 0
 
     return 0
 
