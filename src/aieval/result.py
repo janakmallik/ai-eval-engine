@@ -19,3 +19,14 @@ class EvaluationResult:
             "score": self.score,
             "passed": self.passed,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EvaluationResult":
+        return cls(
+            case_id=data["case_id"],
+            evaluator_name=data["evaluator_name"],
+            expected=data["expected"],
+            actual=data["actual"],
+            score=data["score"],
+            passed=data["passed"],
+        )

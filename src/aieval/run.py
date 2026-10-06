@@ -1,6 +1,5 @@
 import hashlib
 import json
-
 from dataclasses import dataclass, field
 
 from aieval.result import EvaluationResult
@@ -115,3 +114,22 @@ class EvaluationRun:
                 for evaluator_name, summary in self.summaries().items()
             },
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EvaluationRun":
+        results = [
+            EvaluationResult(
+                case_id=result["case_id"],
+                evaluator_name=result["evaluator_name"],
+                expected=result["expected"],
+                actual=result["actual"],
+                score=result["score"],
+                passed=result["passed"],
+            )
+            for result in data.get("results", [])
+        ]
+
+        return cls(
+            results=results,
+            metadata=dict(data.get("metadata", {})),
+        )

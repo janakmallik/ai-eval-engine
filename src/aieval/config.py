@@ -81,3 +81,22 @@ class EvaluationConfig:
             "metadata": self.metadata,
             "evaluator_config": self.evaluator_config,
         }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "EvaluationConfig":
+        return cls(
+            model=data["model"],
+            model_version=data.get("model_version"),
+            dataset=data["dataset"],
+            dataset_version=data.get("dataset_version"),
+            prompt=data.get("prompt"),
+            prompt_version=data.get("prompt_version"),
+            model_provider=data.get("model_provider", "unknown"),
+            retrieval_top_k=data.get("retrieval_top_k", 5),
+            enable_tracing=data.get("enable_tracing", False),
+            metadata=dict(data.get("metadata", {})),
+            evaluator_config={
+                name: dict(settings)
+                for name, settings in data.get("evaluator_config", {}).items()
+            },
+        )

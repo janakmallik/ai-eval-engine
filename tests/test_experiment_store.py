@@ -200,3 +200,61 @@ def test_experiment_store_creates_parent_directory(tmp_path):
     store.save(create_experiment())
 
     assert path.exists()
+
+
+def test_experiment_store_can_list_experiments(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    first = create_experiment(name="baseline")
+    second = create_experiment(name="candidate")
+    second.model_version = "v2"
+
+    store.save(first)
+    store.save(second)
+
+    experiments = store.list()
+
+    assert len(experiments) == 2
+    assert {experiment.name for experiment in experiments} == {
+        "baseline",
+        "candidate",
+    }
+
+
+def test_experiment_store_list_returns_empty_when_store_does_not_exist(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    assert store.list() == []
+
+
+def test_experiment_store_list_returns_experiments_with_their_runs(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    experiment = create_experiment(name="baseline")
+
+    store.save(experiment)
+
+    experiments = store.list()
+
+    assert len(experiments) == 1
+    assert experiments[0].name == "baseline"
+    assert experiments[0].run.to_dict() == experiment.run.to_dict()
+
+
+def test_experiment_store_list_does_not_modify_store(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    first = create_experiment(name="baseline")
+    second = create_experiment(name="candidate")
+    second.model_version = "v2"
+
+    store.save(first)
+    store.save(second)
+
+    before = store.path.read_text()
+
+    store.list()
+
+    after = store.path.read_text()
+
+    assert after == before

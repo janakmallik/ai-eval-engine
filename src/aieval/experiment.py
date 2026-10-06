@@ -77,6 +77,28 @@ class Experiment:
             run=run,
         )
 
+    @classmethod
+    def from_dict(cls, data: dict) -> "Experiment":
+        config = EvaluationConfig(
+            model=data["model"],
+            model_version=data.get("model_version"),
+            prompt=data.get("prompt"),
+            prompt_version=data.get("prompt_version"),
+            dataset=data["dataset"],
+            dataset_version=data.get("dataset_version"),
+            metadata=dict(data.get("metadata", {})),
+            evaluator_config={
+                name: dict(settings)
+                for name, settings in data.get("evaluator_config", {}).items()
+            },
+        )
+
+        return cls(
+            name=data["name"],
+            config=config,
+            run=EvaluationRun.from_dict(data["run"]),
+        )
+
     def to_dict(self) -> dict:
         data = {
             "name": self.name,
@@ -97,3 +119,25 @@ class Experiment:
             data["config"] = self.config.to_dict()
 
         return data
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Experiment":
+        config = EvaluationConfig(
+            model=data["model"],
+            model_version=data.get("model_version"),
+            prompt=data.get("prompt"),
+            prompt_version=data.get("prompt_version"),
+            dataset=data["dataset"],
+            dataset_version=data.get("dataset_version"),
+            metadata=dict(data.get("metadata", {})),
+            evaluator_config={
+                name: dict(settings)
+                for name, settings in data.get("evaluator_config", {}).items()
+            },
+        )
+
+        return cls(
+            name=data["name"],
+            config=config,
+            run=EvaluationRun.from_dict(data["run"]),
+        )

@@ -33,6 +33,22 @@ class ExperimentStore:
 
         return self._from_dict(data[experiment_id])
 
+    def list(self) -> list[Experiment]:
+        if not self.path.exists():
+            return []
+
+        data = json.loads(self.path.read_text())
+
+        return [Experiment.from_dict(experiment_data) for experiment_data in data.values()]
+
+    @classmethod
+    def from_dict(cls, data: dict) -> "Experiment":
+        return cls(
+            name=data["name"],
+            config=EvaluationConfig.from_dict(data["config"]),
+            run=EvaluationRun.from_dict(data["run"]),
+        )
+
     def _read(self) -> dict[str, dict]:
         if not self.path.exists():
             return {}
