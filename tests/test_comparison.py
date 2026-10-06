@@ -1,3 +1,5 @@
+import pytest
+
 from aieval.comparison import compare_runs
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
@@ -145,3 +147,55 @@ def test_compare_runs_handles_added_evaluator():
 
     assert comparison.evaluator_deltas["exact_match"] == 0.0
     assert "similarity" in comparison.added_evaluators
+
+
+def test_compare_runs_includes_latency_cost_and_error_rate():
+    baseline = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="1",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ],
+        metadata={
+            "latency": 0.40,
+            "cost": 0.01,
+            "error_rate": 0.02,
+        },
+    )
+
+    current = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="1",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ],
+        metadata={
+            "latency": 0.60,
+            "cost": 0.015,
+            "error_rate": 0.05,
+        },
+    )
+
+    comparison = compare_runs(baseline, current)
+
+    assert comparison.baseline_latency == 0.40
+    assert comparison.current_latency == 0.60
+    assert comparison.latency_delta == pytest.approx(0.20)
+
+    assert comparison.baseline_cost == 0.01
+    assert comparison.current_cost == 0.015
+    assert comparison.cost_delta == pytest.approx(0.005)
+
+    assert comparison.baseline_error_rate == 0.02
+    assert comparison.current_error_rate == 0.05
+    assert comparison.error_rate_delta == pytest.approx(0.03)

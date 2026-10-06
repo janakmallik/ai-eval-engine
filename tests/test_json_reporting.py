@@ -382,6 +382,17 @@ def test_json_reporter_includes_trace_summary(tmp_path):
         "completed_span_count": 2,
         "total_duration": pytest.approx(root.duration + model.duration),
         "total_cost": 0.0,
+        "root_span_count": 2,
+        "slowest_spans": [
+            {
+                "name": "evaluation",
+                "duration": pytest.approx(root.duration),
+            },
+            {
+                "name": "model",
+                "duration": pytest.approx(model.duration),
+            },
+        ],
         "spans": [
             {
                 "span_id": root.span_id,

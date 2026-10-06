@@ -49,12 +49,24 @@ class Trace:
             "trace_id": self.trace_id,
             "span_count": len(self.spans),
             "error_count": sum(span.status == "error" for span in self.spans),
+            "root_span_count": len(self.root_spans()),
             "duration": self.duration,
             "total_cost": total_cost,
             "completed_span_count": sum(
                 span.ended_at is not None for span in self.spans
             ),
             "total_duration": sum(durations),
+            "slowest_spans": [
+                {
+                    "name": span.name,
+                    "duration": span.duration,
+                }
+                for span in sorted(
+                    self.spans,
+                    key=lambda span: span.duration or 0.0,
+                    reverse=True,
+                )[:5]
+            ],
             "spans": [
                 {
                     "span_id": span.span_id,

@@ -108,3 +108,96 @@ def test_regression_detector_uses_default_config():
 
     assert detector.config.threshold == 0.0
     assert detector.config.evaluator_thresholds == {}
+
+
+def test_regression_detector_detects_latency_regression():
+    comparison = ComparisonResult(
+        baseline_score=0.92,
+        current_score=0.92,
+        score_delta=0.0,
+        baseline_pass_rate=0.92,
+        current_pass_rate=0.92,
+        pass_rate_delta=0.0,
+        baseline_latency=0.40,
+        current_latency=0.60,
+        latency_delta=0.20,
+        baseline_cost=0.01,
+        current_cost=0.01,
+        cost_delta=0.0,
+        baseline_error_rate=0.02,
+        current_error_rate=0.02,
+        error_rate_delta=0.0,
+        evaluator_deltas={},
+    )
+
+    config = RegressionConfig(
+        latency_threshold=0.10,
+    )
+
+    detector = RegressionDetector(config=config)
+    result = detector.check(comparison)
+
+    assert result.regressed is True
+    assert result.latency_regression is True
+
+
+def test_regression_detector_detects_cost_regression():
+    comparison = ComparisonResult(
+        baseline_score=0.92,
+        current_score=0.92,
+        score_delta=0.0,
+        baseline_pass_rate=0.92,
+        current_pass_rate=0.92,
+        pass_rate_delta=0.0,
+        baseline_latency=0.40,
+        current_latency=0.40,
+        latency_delta=0.0,
+        baseline_cost=0.01,
+        current_cost=0.015,
+        cost_delta=0.005,
+        baseline_error_rate=0.02,
+        current_error_rate=0.02,
+        error_rate_delta=0.0,
+        evaluator_deltas={},
+    )
+
+    config = RegressionConfig(
+        cost_threshold=0.002,
+    )
+
+    detector = RegressionDetector(config=config)
+    result = detector.check(comparison)
+
+    assert result.regressed is True
+    assert result.cost_regression is True
+
+
+def test_regression_detector_detects_error_rate_regression():
+    comparison = ComparisonResult(
+        baseline_score=0.92,
+        current_score=0.92,
+        score_delta=0.0,
+        baseline_pass_rate=0.92,
+        current_pass_rate=0.92,
+        pass_rate_delta=0.0,
+        baseline_latency=0.40,
+        current_latency=0.40,
+        latency_delta=0.0,
+        baseline_cost=0.01,
+        current_cost=0.01,
+        cost_delta=0.0,
+        baseline_error_rate=0.02,
+        current_error_rate=0.05,
+        error_rate_delta=0.03,
+        evaluator_deltas={},
+    )
+
+    config = RegressionConfig(
+        error_rate_threshold=0.01,
+    )
+
+    detector = RegressionDetector(config=config)
+    result = detector.check(comparison)
+
+    assert result.regressed is True
+    assert result.error_rate_regression is True

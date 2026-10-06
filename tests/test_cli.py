@@ -575,3 +575,138 @@ def test_cli_trace_command_renders_error_status_and_exception(
     assert exit_code == 0
     assert "tool [error]" in captured.out
     assert "search failed" in captured.out
+
+
+def test_format_regression_report_includes_performance_regressions():
+    comparison = ComparisonResult(
+        baseline_score=0.91,
+        current_score=0.94,
+        score_delta=0.03,
+        baseline_pass_rate=0.91,
+        current_pass_rate=0.94,
+        pass_rate_delta=0.03,
+        baseline_latency=0.80,
+        current_latency=1.40,
+        latency_delta=0.60,
+        baseline_cost=0.010,
+        current_cost=0.018,
+        cost_delta=0.008,
+        baseline_error_rate=0.02,
+        current_error_rate=0.05,
+        error_rate_delta=0.03,
+        evaluator_deltas={
+            "faithfulness": 0.03,
+        },
+    )
+
+    regression_result = RegressionResult(
+        regressed=True,
+        score_regression=False,
+        evaluator_regressions=[],
+        latency_regression=True,
+        cost_regression=True,
+        error_rate_regression=True,
+    )
+
+    gate_result = GateResult(
+        passed=False,
+        status="failed",
+        reason="Regression detected",
+    )
+
+    baseline = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model-v1",
+            "dataset": "test-set",
+        },
+    )
+
+    current = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model-v2",
+            "dataset": "test-set",
+        },
+    )
+
+    output = format_regression_report(
+        comparison,
+        regression_result,
+        gate_result,
+        baseline,
+        current,
+    )
+
+    assert "Latency:" in output
+    assert "baseline latency: 0.800s" in output
+    assert "current latency:  1.400s" in output
+    assert "latency regression: YES" in output
+
+    assert "Cost:" in output
+    assert "baseline cost: $0.010" in output
+    assert "current cost:  $0.018" in output
+    assert "cost regression: YES" in output
+
+    assert "Reliability:" in output
+    assert "baseline error rate: 0.020" in output
+    assert "current error rate:  0.050" in output
+    assert "error-rate regression: YES" in output
+
+
+def test_cli_regression_fails_on_performance_regressions(tmp_path, capsys):
+    reporter = JsonReporter()
+
+    baseline = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model-v1",
+            "dataset": "test-set",
+            "latency": 0.80,
+            "cost": 0.010,
+            "error_rate": 0.02,
+        },
+    )
+
+    current = EvaluationRun(
+        results=[],
+        metadata={
+            "model": "model-v2",
+            "dataset": "test-set",
+            "latency": 1.40,
+            "cost": 0.018,
+            "error_rate": 0.05,
+        },
+    )
+
+    baseline_path = tmp_path / "baseline.json"
+    current_path = tmp_path / "current.json"
+
+    reporter.write(baseline, baseline_path)
+    reporter.write(current, current_path)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline_path),
+            "--current",
+            str(current_path),
+            "--threshold",
+            "0.0",
+            "--latency-threshold",
+            "0.10",
+            "--cost-threshold",
+            "0.002",
+            "--error-rate-threshold",
+            "0.01",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Status: FAILED" in captured.out
+    assert "latency regression: YES" in captured.out
+    assert "cost regression: YES" in captured.out
+    assert "error-rate regression: YES" in captured.out

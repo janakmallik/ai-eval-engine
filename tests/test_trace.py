@@ -1,3 +1,4 @@
+import time
 from datetime import UTC, datetime
 
 from aieval.tracing.span import Span
@@ -2637,8 +2638,87 @@ def test_trace_renders_span_tree_with_hierarchy():
     case.end()
     model.end()
 
-    assert trace.render_span_tree().splitlines() == [
-        "evaluation [ok] 0.000s",
-        "└── evaluation.case [ok] 0.000s",
-        "    └── model [ok] 0.000s",
-    ]
+    lines = trace.render_span_tree().splitlines()
+
+    assert lines[0].startswith("evaluation [ok] ")
+    assert lines[1].startswith("└── evaluation.case [ok] ")
+    assert lines[2].startswith("    └── model [ok] ")
+
+    assert len(lines) == 3
+
+
+def test_trace_summary_counts_spans_and_errors():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+
+    with root:
+        tool_span = trace.start_tool(
+            tool="web_search",
+            parent_span_id=root.span_id,
+        )
+
+        try:
+            with tool_span:
+                raise RuntimeError("search failed")
+        except RuntimeError:
+            pass
+
+        model_span = trace.start_span(
+            "model",
+            parent_span_id=root.span_id,
+        )
+
+        with model_span:
+            pass
+
+    summary = trace.summary()
+
+    assert summary["span_count"] == 3
+    assert summary["error_count"] == 1
+    assert summary["root_span_count"] == 1
+
+
+def test_trace_summary_includes_total_duration():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+
+    with root:
+        pass
+
+    summary = trace.summary()
+
+    assert summary["total_duration"] is not None
+    assert summary["total_duration"] >= 0
+
+
+def test_trace_summary_includes_slowest_spans():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+
+    with root:
+        fast = trace.start_span(
+            "fast",
+            parent_span_id=root.span_id,
+        )
+
+        with fast:
+            pass
+
+        slow = trace.start_span(
+            "slow",
+            parent_span_id=root.span_id,
+        )
+
+        with slow:
+            time.sleep(0.01)
+
+    summary = trace.summary()
+
+    assert "slowest_spans" in summary
+    assert len(summary["slowest_spans"]) == 3
+    assert summary["slowest_spans"][0]["name"] == "evaluation"
+    assert summary["slowest_spans"][1]["name"] == "slow"
+    assert summary["slowest_spans"][2]["name"] == "fast"

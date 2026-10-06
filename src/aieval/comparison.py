@@ -12,7 +12,20 @@ class ComparisonResult:
     baseline_pass_rate: float
     current_pass_rate: float
     pass_rate_delta: float
-    evaluator_deltas: dict[str, float]
+
+    baseline_latency: float = 0.0
+    current_latency: float = 0.0
+    latency_delta: float = 0.0
+
+    baseline_cost: float = 0.0
+    current_cost: float = 0.0
+    cost_delta: float = 0.0
+
+    baseline_error_rate: float = 0.0
+    current_error_rate: float = 0.0
+    error_rate_delta: float = 0.0
+
+    evaluator_deltas: dict[str, float] = field(default_factory=dict)
     added_evaluators: set[str] = field(default_factory=set)
     removed_evaluators: set[str] = field(default_factory=set)
     model_changed: bool = False
@@ -43,8 +56,6 @@ def compare_runs(
     added_evaluators = current_evaluators - baseline_evaluators
     removed_evaluators = baseline_evaluators - current_evaluators
 
-    # {} creates an empty dictionary.
-    # you'll do something like evaluator_deltas[name] = current_score - baseline_score to record the change for each evaluator.
     evaluator_deltas = {}
 
     for evaluator_name in evaluator_names:
@@ -53,6 +64,15 @@ def compare_runs(
 
         evaluator_deltas[evaluator_name] = current_score - baseline_score
 
+    baseline_latency = float(baseline.metadata.get("latency", 0.0))
+    current_latency = float(current.metadata.get("latency", 0.0))
+
+    baseline_cost = float(baseline.metadata.get("cost", 0.0))
+    current_cost = float(current.metadata.get("cost", 0.0))
+
+    baseline_error_rate = float(baseline.metadata.get("error_rate", 0.0))
+    current_error_rate = float(current.metadata.get("error_rate", 0.0))
+
     return ComparisonResult(
         baseline_score=baseline.score,
         current_score=current.score,
@@ -60,6 +80,15 @@ def compare_runs(
         baseline_pass_rate=baseline.pass_rate,
         current_pass_rate=current.pass_rate,
         pass_rate_delta=current.pass_rate - baseline.pass_rate,
+        baseline_latency=baseline_latency,
+        current_latency=current_latency,
+        latency_delta=current_latency - baseline_latency,
+        baseline_cost=baseline_cost,
+        current_cost=current_cost,
+        cost_delta=current_cost - baseline_cost,
+        baseline_error_rate=baseline_error_rate,
+        current_error_rate=current_error_rate,
+        error_rate_delta=current_error_rate - baseline_error_rate,
         evaluator_deltas=evaluator_deltas,
         added_evaluators=added_evaluators,
         removed_evaluators=removed_evaluators,

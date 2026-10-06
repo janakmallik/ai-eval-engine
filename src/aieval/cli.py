@@ -44,6 +44,27 @@ def build_parser() -> argparse.ArgumentParser:
     )
 
     regression_parser.add_argument(
+        "--latency-threshold",
+        type=float,
+        default=0.0,
+        help="Maximum allowed latency regression.",
+    )
+
+    regression_parser.add_argument(
+        "--cost-threshold",
+        type=float,
+        default=0.0,
+        help="Maximum allowed cost regression.",
+    )
+
+    regression_parser.add_argument(
+        "--error-rate-threshold",
+        type=float,
+        default=0.0,
+        help="Maximum allowed error-rate regression.",
+    )
+
+    regression_parser.add_argument(
         "--evaluator-threshold",
         action="append",
         default=[],
@@ -97,6 +118,9 @@ def main(args: list[str] | None = None) -> int:
             evaluator_thresholds=parse_evaluator_thresholds(
                 parsed_args.evaluator_threshold
             ),
+            latency_threshold=parsed_args.latency_threshold,
+            cost_threshold=parsed_args.cost_threshold,
+            error_rate_threshold=parsed_args.error_rate_threshold,
         )
 
         detector = RegressionDetector(config=config)
@@ -162,8 +186,33 @@ def format_regression_report(
         delta = comparison.evaluator_deltas[evaluator_name]
         lines.append(f"    - {evaluator_name}: {delta:+.3f}")
 
-    lines.append("")
-    lines.append("Evaluator deltas:")
+    lines.extend(
+        [
+            "",
+            "Latency:",
+            f"  baseline latency: {comparison.baseline_latency:.3f}s",
+            f"  current latency:  {comparison.current_latency:.3f}s",
+            f"  latency delta:    {comparison.latency_delta:+.3f}s",
+            f"  latency regression: "
+            f"{'YES' if regression_result.latency_regression else 'NO'}",
+            "",
+            "Cost:",
+            f"  baseline cost: ${comparison.baseline_cost:.3f}",
+            f"  current cost:  ${comparison.current_cost:.3f}",
+            f"  cost delta:    ${comparison.cost_delta:+.3f}",
+            f"  cost regression: "
+            f"{'YES' if regression_result.cost_regression else 'NO'}",
+            "",
+            "Reliability:",
+            f"  baseline error rate: {comparison.baseline_error_rate:.3f}",
+            f"  current error rate:  {comparison.current_error_rate:.3f}",
+            f"  error-rate delta:    {comparison.error_rate_delta:+.3f}",
+            f"  error-rate regression: "
+            f"{'YES' if regression_result.error_rate_regression else 'NO'}",
+            "",
+            "Evaluator deltas:",
+        ]
+    )
 
     for evaluator_name, delta in sorted(comparison.evaluator_deltas.items()):
         lines.append(f"  {evaluator_name}: {delta:+.3f}")
