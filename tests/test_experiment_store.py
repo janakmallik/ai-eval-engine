@@ -258,3 +258,84 @@ def test_experiment_store_list_does_not_modify_store(tmp_path):
     after = store.path.read_text()
 
     assert after == before
+
+
+def test_experiment_store_can_find_by_name(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    baseline = create_experiment(name="baseline")
+    candidate = create_experiment(name="candidate")
+
+    store.save(baseline)
+    store.save(candidate)
+
+    result = store.find(name="candidate")
+
+    assert result is not None
+    assert result.name == "candidate"
+
+
+def test_experiment_store_find_returns_none_when_name_not_found(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    store.save(create_experiment(name="baseline"))
+
+    result = store.find(name="missing")
+
+    assert result is None
+
+
+def test_experiment_store_can_find_by_model_and_version(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    baseline = create_experiment(name="baseline")
+    candidate = create_experiment(name="candidate")
+    candidate.model = "qa-model-v2"
+    candidate.model_version = "v2"
+
+    store.save(baseline)
+    store.save(candidate)
+
+    result = store.find(
+        model="qa-model-v2",
+        model_version="v2",
+    )
+
+    assert result is not None
+    assert result.name == "candidate"
+
+
+def test_experiment_store_find_can_combine_filters(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    first = create_experiment(name="baseline")
+    first.model_version = "v1"
+
+    second = create_experiment(name="candidate")
+    second.model_version = "v2"
+
+    store.save(first)
+    store.save(second)
+
+    result = store.find(
+        name="candidate",
+        model_version="v2",
+    )
+
+    assert result is not None
+    assert result.name == "candidate"
+
+
+def test_experiment_store_find_does_not_modify_store(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    experiment = create_experiment(name="baseline")
+    store.save(experiment)
+
+    before = store.path.read_text()
+
+    store.find(name="baseline")
+
+    after = store.path.read_text()
+
+    assert after == before

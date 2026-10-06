@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from aieval.config import EvaluationConfig
 from aieval.experiment import Experiment
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
@@ -39,7 +40,29 @@ class ExperimentStore:
 
         data = json.loads(self.path.read_text())
 
-        return [Experiment.from_dict(experiment_data) for experiment_data in data.values()]
+        return [
+            Experiment.from_dict(experiment_data) for experiment_data in data.values()
+        ]
+
+    def find(
+        self,
+        name: str | None = None,
+        model: str | None = None,
+        model_version: str | None = None,
+    ) -> Experiment | None:
+        for experiment in self.list():
+            if name is not None and experiment.name != name:
+                continue
+
+            if model is not None and experiment.model != model:
+                continue
+
+            if model_version is not None and experiment.model_version != model_version:
+                continue
+
+            return experiment
+
+        return None
 
     @classmethod
     def from_dict(cls, data: dict) -> "Experiment":
