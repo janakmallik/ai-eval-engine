@@ -1,17 +1,3 @@
-from aieval.tracing.usage import ModelUsage
-
-
-def test_model_usage_stores_token_counts():
-    usage = ModelUsage(
-        input_tokens=100,
-        output_tokens=50,
-    )
-
-    assert usage.input_tokens == 100
-    assert usage.output_tokens == 50
-    assert usage.total_tokens == 150
-
-
 import pytest
 
 from aieval.tracing.usage import ModelUsage
