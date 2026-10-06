@@ -107,6 +107,21 @@ class Trace:
 
         return span
 
+    def root_spans(self) -> list[Span]:
+        return [span for span in self.spans if span.parent_span_id is None]
+
+    def children_of(self, span: Span) -> list[Span]:
+        return [child for child in self.spans if child.parent_span_id == span.span_id]
+
+    def span_tree(self) -> list[dict]:
+        def build_tree(span: Span) -> dict:
+            return {
+                "span": span,
+                "children": [build_tree(child) for child in self.children_of(span)],
+            }
+
+        return [build_tree(root) for root in self.root_spans()]
+
     def start_retrieval(
         self,
         query: str,

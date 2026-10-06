@@ -2517,3 +2517,74 @@ def test_tool_span_records_error_status_on_exception():
     assert span.events[0]["name"] == "exception"
     assert span.events[0]["attributes"]["exception.type"] == "RuntimeError"
     assert span.events[0]["attributes"]["exception.message"] == "search failed"
+
+
+def test_trace_returns_root_spans():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    child = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+
+    assert trace.root_spans() == [root]
+    assert child not in trace.root_spans()
+
+
+def test_trace_returns_children_of_span():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+    evaluator = trace.start_span(
+        "evaluator.exact_match",
+        parent=case,
+    )
+
+    assert trace.children_of(root) == [case]
+    assert trace.children_of(case) == [model, evaluator]
+    assert trace.children_of(model) == []
+
+
+def test_trace_builds_span_tree():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    retrieval = trace.start_span(
+        "retrieval",
+        parent=case,
+    )
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+    evaluator = trace.start_span(
+        "evaluator.exact_match",
+        parent=case,
+    )
+
+    tree = trace.span_tree()
+
+    assert len(tree) == 1
+    assert tree[0]["span"] is root
+
+    case_node = tree[0]["children"][0]
+
+    assert case_node["span"] is case
+    assert [node["span"] for node in case_node["children"]] == [
+        retrieval,
+        model,
+        evaluator,
+    ]
