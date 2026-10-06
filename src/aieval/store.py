@@ -64,13 +64,22 @@ class ExperimentStore:
 
         return None
 
-    @classmethod
-    def from_dict(cls, data: dict) -> "Experiment":
-        return cls(
-            name=data["name"],
-            config=EvaluationConfig.from_dict(data["config"]),
-            run=EvaluationRun.from_dict(data["run"]),
+    def delete(self, experiment_id: str) -> bool:
+        if not self.path.exists():
+            return False
+
+        data = json.loads(self.path.read_text())
+
+        if experiment_id not in data:
+            return False
+
+        del data[experiment_id]
+
+        self.path.write_text(
+            json.dumps(data, indent=2, sort_keys=True),
         )
+
+        return True
 
     def _read(self) -> dict[str, dict]:
         if not self.path.exists():

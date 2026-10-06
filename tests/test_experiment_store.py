@@ -339,3 +339,78 @@ def test_experiment_store_find_does_not_modify_store(tmp_path):
     after = store.path.read_text()
 
     assert after == before
+
+
+def test_experiment_store_can_delete_experiment(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    experiment = create_experiment(name="baseline")
+    store.save(experiment)
+
+    deleted = store.delete(experiment.experiment_id)
+
+    assert deleted is True
+    with pytest.raises(KeyError):
+        store.load(experiment.experiment_id)
+
+
+def test_experiment_store_delete_returns_false_when_experiment_does_not_exist(
+    tmp_path,
+):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    deleted = store.delete("missing")
+
+    assert deleted is False
+
+
+def test_experiment_store_delete_does_not_delete_other_experiments(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    first = create_experiment(name="baseline")
+    second = create_experiment(name="candidate")
+    second.model_version = "v2"
+
+    store.save(first)
+    store.save(second)
+
+    deleted = store.delete(first.experiment_id)
+
+    assert deleted is True
+    with pytest.raises(KeyError):
+        store.load(first.experiment_id)
+    assert store.load(second.experiment_id).name == "candidate"
+
+
+def test_experiment_store_delete_updates_persisted_store(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    first = create_experiment(name="baseline")
+    second = create_experiment(name="candidate")
+    second.model_version = "v2"
+
+    store.save(first)
+    store.save(second)
+
+    store.delete(first.experiment_id)
+
+    data = json.loads(store.path.read_text())
+
+    assert first.experiment_id not in data
+    assert second.experiment_id in data
+
+
+def test_experiment_store_delete_does_not_modify_store_when_missing(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    experiment = create_experiment(name="baseline")
+    store.save(experiment)
+
+    before = store.path.read_text()
+
+    deleted = store.delete("missing")
+
+    after = store.path.read_text()
+
+    assert deleted is False
+    assert after == before
