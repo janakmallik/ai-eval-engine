@@ -2466,3 +2466,54 @@ def test_tool_response_allows_missing_result_count():
 
     assert response.output == "Paris"
     assert response.result_count is None
+
+
+def test_tool_span_records_error_status_and_exception():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    try:
+        with span:
+            raise RuntimeError("search failed")
+    except RuntimeError as exc:
+        assert str(exc) == "search failed"
+
+    assert span.status == "error"
+    assert span.status_message == "search failed"
+    assert span.ended_at is not None
+
+    assert len(span.events) == 1
+
+    exception_event = span.events[0]
+
+    assert exception_event["name"] == "exception"
+    assert exception_event["attributes"]["exception.type"] == "RuntimeError"
+    assert exception_event["attributes"]["exception.message"] == "search failed"
+    assert exception_event["attributes"]["exception.stacktrace"]
+
+
+def test_tool_span_records_error_status_on_exception():
+    trace = Trace()
+
+    span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    try:
+        with span:
+            raise RuntimeError("search failed")
+    except RuntimeError:
+        pass
+
+    assert span.status == "error"
+    assert span.status_message == "search failed"
+    assert span.attributes["tool.name"] == "web_search"
+    assert len(span.events) == 1
+    assert span.events[0]["name"] == "exception"
+    assert span.events[0]["attributes"]["exception.type"] == "RuntimeError"
+    assert span.events[0]["attributes"]["exception.message"] == "search failed"

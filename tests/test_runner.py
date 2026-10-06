@@ -1806,36 +1806,6 @@ def test_evaluate_dataset_records_tool_exception():
         )
 
 
-def test_evaluate_dataset_tool_span_records_error_status():
-    dataset = [
-        EvalCase(
-            id="1",
-            input="Search for Paris.",
-            expected="Paris",
-        )
-    ]
-
-    def tool(query):
-        raise RuntimeError("tool failed")
-
-    def model(text):
-        return "Paris"
-
-    try:
-        evaluate_dataset(
-            model=model,
-            dataset=dataset,
-            evaluators=[ExactMatchEvaluator()],
-            enable_tracing=True,
-            tool=tool,
-        )
-    except RuntimeError:
-        pass
-
-    # We'll inspect the implementation here after the first test
-    # establishes the expected exception behavior.
-
-
 def test_evaluate_dataset_traces_complete_ai_pipeline():
     dataset = [
         EvalCase(
@@ -2296,3 +2266,50 @@ def test_evaluate_dataset_tool_exception_records_error_status():
         pass
     else:
         raise AssertionError("Expected RuntimeError")
+
+
+def test_evaluate_dataset_tool_span_records_error_status():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        raise RuntimeError("search failed")
+
+    try:
+        evaluate_dataset(
+            model=lambda _: "Paris",
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            tool=tool,
+            enable_tracing=True,
+        )
+    except RuntimeError:
+        pass
+
+# Does a tool failure remain a real application failure, rather than being
+# silently converted into an evaluation result? We want yes.
+def test_evaluate_dataset_tool_failure_propagates_exception():
+    dataset = [
+        EvalCase(
+            id="1",
+            input="Find Paris",
+            expected="Paris",
+        )
+    ]
+
+    def tool(_):
+        raise RuntimeError("search failed")
+
+    with pytest.raises(RuntimeError, match="search failed"):
+        evaluate_dataset(
+            model=lambda _: "Paris",
+            dataset=dataset,
+            evaluators=[ExactMatchEvaluator()],
+            tool=tool,
+            enable_tracing=True,
+        )
