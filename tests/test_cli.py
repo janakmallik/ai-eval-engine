@@ -7,6 +7,7 @@ from aieval.regression import RegressionResult
 from aieval.reporting.json import JsonReporter
 from aieval.run import EvaluationRun
 from aieval.runner import evaluate_dataset
+from aieval.tracing.trace import Trace
 
 
 def test_cli_help():
@@ -531,3 +532,46 @@ def test_cli_trace_command_renders_span_attributes(tmp_path, capsys):
     assert exit_code == 0
     assert "model.input:" in captured.out
     assert "model.output:" in captured.out
+
+
+def test_cli_trace_command_renders_error_status_and_exception(
+    tmp_path,
+    capsys,
+):
+
+    trace = Trace()
+
+    tool_span = trace.start_tool(
+        tool="web_search",
+        parent_span_id=None,
+    )
+
+    try:
+        with tool_span:
+            raise RuntimeError("search failed")
+    except RuntimeError:
+        pass
+
+    from aieval.run import EvaluationRun
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    report = tmp_path / "run.json"
+    JsonReporter().write(run, report)
+
+    exit_code = main(
+        [
+            "trace",
+            "--input",
+            str(report),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "tool [error]" in captured.out
+    assert "search failed" in captured.out

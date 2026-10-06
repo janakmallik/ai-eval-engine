@@ -157,7 +157,12 @@ class Trace:
             )
 
             for key, value in span.attributes.items():
-                lines.append(f"{attribute_prefix}    {key}: {value}")
+                lines.append(f"{attribute_prefix}{key}: {value}")
+
+            for event in span.events:
+                lines.append(
+                    f"{attribute_prefix}{event['name']}: {event['attributes']}"
+                )
 
             child_prefix = (
                 prefix if is_root else prefix + ("    " if is_last else "│   ")
