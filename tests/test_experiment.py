@@ -1,7 +1,8 @@
+from aieval.comparison import compare_experiments
+from aieval.config import EvaluationConfig
 from aieval.experiment import Experiment
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-from aieval.comparison import compare_experiments
 
 
 def test_experiment_stores_evaluation_context():
@@ -505,3 +506,242 @@ def test_compare_experiments_detects_dataset_version_change():
     comparison = compare_experiments(baseline, current)
 
     assert comparison.dataset_version_changed is True
+
+
+def test_experiment_stores_evaluation_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+    )
+
+    experiment = Experiment(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.config is config
+
+
+def test_experiment_config_provides_model_identity():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        model_provider="openai",
+    )
+
+    experiment = Experiment(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.config.model == "qa-model"
+    assert experiment.config.model_provider == "openai"
+
+
+def test_experiment_config_provides_versioned_definition():
+    config = EvaluationConfig(
+        model="qa-model",
+        model_version="v2",
+        dataset="qa-dataset",
+        dataset_version="v5",
+        prompt="Answer using context.",
+        prompt_version="v3",
+    )
+
+    experiment = Experiment(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.config.model_version == "v2"
+    assert experiment.config.dataset_version == "v5"
+    assert experiment.config.prompt_version == "v3"
+
+
+def test_experiment_id_is_based_on_config_identity():
+    config = EvaluationConfig(
+        model="qa-model",
+        model_version="v2",
+        dataset="qa-dataset",
+        dataset_version="v5",
+        prompt="Answer using context.",
+        prompt_version="v3",
+    )
+
+    experiment = Experiment(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.experiment_id == config.config_id
+
+
+def test_experiment_config_identity_changes_when_config_changes():
+    config1 = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+    )
+
+    config2 = EvaluationConfig(
+        model="different-model",
+        dataset="qa-dataset",
+    )
+
+    experiment1 = Experiment(
+        name="baseline",
+        config=config1,
+        run=EvaluationRun(results=[]),
+    )
+
+    experiment2 = Experiment(
+        name="baseline",
+        config=config2,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment1.experiment_id != experiment2.experiment_id
+
+
+def test_experiment_to_dict_contains_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+    )
+
+    experiment = Experiment(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    data = experiment.to_dict()
+
+    assert data["config"] == config.to_dict()
+
+
+def test_experiment_can_be_created_from_evaluation_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        prompt="Answer using the context.",
+        model_version="v2",
+        prompt_version="v3",
+        dataset_version="v5",
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.model == "qa-model"
+    assert experiment.model_version == "v2"
+    assert experiment.prompt == "Answer using the context."
+    assert experiment.prompt_version == "v3"
+    assert experiment.dataset == "qa-dataset"
+    assert experiment.dataset_version == "v5"
+
+
+def test_experiment_from_config_copies_evaluator_config():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        evaluator_config={
+            "exact_match": {
+                "case_sensitive": False,
+            }
+        },
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.evaluator_config == config.evaluator_config
+
+    config.evaluator_config["exact_match"]["case_sensitive"] = True
+
+    assert experiment.evaluator_config["exact_match"]["case_sensitive"] is False
+
+
+def test_experiment_from_config_copies_metadata():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+        metadata={"environment": "test"},
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.metadata == {"environment": "test"}
+
+    config.metadata["environment"] = "production"
+
+    assert experiment.metadata["environment"] == "test"
+
+
+def test_experiment_from_config_preserves_run():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+    )
+
+    run = EvaluationRun(results=[])
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=run,
+    )
+
+    assert experiment.run is run
+
+
+def test_experiment_from_config_preserves_name():
+    config = EvaluationConfig(
+        model="qa-model",
+        dataset="qa-dataset",
+    )
+
+    experiment = Experiment.from_config(
+        name="production-baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.name == "production-baseline"
+
+
+def test_experiment_from_config_produces_same_identity():
+    config = EvaluationConfig(
+        model="qa-model",
+        model_version="v2",
+        dataset="qa-dataset",
+        dataset_version="v5",
+        prompt="Answer using the context.",
+        prompt_version="v3",
+        evaluator_config={
+            "exact_match": {
+                "case_sensitive": False,
+            }
+        },
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    assert experiment.experiment_id == config.config_id
