@@ -122,6 +122,59 @@ class Trace:
 
         return [build_tree(root) for root in self.root_spans()]
 
+    # This method turns the span forest (the output of span_tree()) into a
+    # human-readable, indented tree string — the classic
+    # tree-command / ├── / └── rendering.
+    def render_span_tree(self) -> str:
+        lines: list[str] = []
+
+        def render_node(
+            node: dict,
+            prefix: str,
+            is_last: bool,
+            is_root: bool = False,
+        ) -> None:
+            span = node["span"]
+            children = node["children"]
+
+            duration = (
+                f"{span.duration:.3f}s" if span.duration is not None else "running"
+            )
+
+            status = span.status
+
+            if is_root:
+                connector = ""
+            elif is_last:
+                connector = "└── "
+            else:
+                connector = "├── "
+
+            lines.append(f"{prefix}{connector}{span.name} [{status}] {duration}")
+
+            child_prefix = (
+                prefix if is_root else prefix + ("    " if is_last else "│   ")
+            )
+
+            for index, child in enumerate(children):
+                render_node(
+                    child,
+                    child_prefix,
+                    index == len(children) - 1,
+                )
+
+        roots = self.span_tree()
+
+        for index, root in enumerate(roots):
+            render_node(
+                root,
+                prefix="",
+                is_last=index == len(roots) - 1,
+                is_root=True,
+            )
+
+        return "\n".join(lines)
+
     def start_retrieval(
         self,
         query: str,

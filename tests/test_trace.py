@@ -2588,3 +2588,57 @@ def test_trace_builds_span_tree():
         model,
         evaluator,
     ]
+
+
+def test_trace_renders_span_tree():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    retrieval = trace.start_span(
+        "retrieval",
+        parent=case,
+    )
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+
+    root.end()
+    case.end()
+    retrieval.end()
+    model.end()
+
+    rendered = trace.render_span_tree()
+
+    assert "evaluation [ok]" in rendered
+    assert "evaluation.case [ok]" in rendered
+    assert "retrieval [ok]" in rendered
+    assert "model [ok]" in rendered
+
+
+def test_trace_renders_span_tree_with_hierarchy():
+    trace = Trace()
+
+    root = trace.start_span("evaluation")
+    case = trace.start_span(
+        "evaluation.case",
+        parent=root,
+    )
+    model = trace.start_span(
+        "model",
+        parent=case,
+    )
+
+    root.end()
+    case.end()
+    model.end()
+
+    assert trace.render_span_tree().splitlines() == [
+        "evaluation [ok] 0.000s",
+        "└── evaluation.case [ok] 0.000s",
+        "    └── model [ok] 0.000s",
+    ]
