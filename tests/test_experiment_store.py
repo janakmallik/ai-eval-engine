@@ -414,3 +414,22 @@ def test_experiment_store_delete_does_not_modify_store_when_missing(tmp_path):
 
     assert deleted is False
     assert after == before
+
+
+def test_experiment_store_preserves_trace(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    trace = Trace()
+    with trace.start_span("evaluation"):
+        pass
+
+    experiment = create_experiment()
+    experiment.run.trace = trace
+
+    store.save(experiment)
+
+    loaded = store.load(experiment.experiment_id)
+
+    assert loaded.run.trace is not None

@@ -5,6 +5,7 @@ from aieval.config import EvaluationConfig
 from aieval.experiment import Experiment
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
+from aieval.tracing.trace import Trace
 
 
 class ExperimentStore:
@@ -106,7 +107,11 @@ class ExperimentStore:
         run = EvaluationRun(
             results=results,
             metadata=run_data.get("metadata", {}),
-            trace=None,
+            trace=(
+                Trace.from_dict(run_data["trace"])
+                if run_data.get("trace") is not None
+                else None
+            ),
         )
 
         return Experiment(
