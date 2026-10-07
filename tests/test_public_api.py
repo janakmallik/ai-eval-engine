@@ -12,6 +12,17 @@ from aieval import (
 )
 
 
+def test_public_api_exposes_regression_components():
+    import aieval
+
+    assert aieval.ComparisonResult
+    assert aieval.RegressionConfig
+    assert aieval.RegressionDetector
+    assert aieval.RegressionResult
+    assert aieval.RegressionGate
+    assert aieval.GateResult
+
+
 def test_public_api_exports_core_v1_objects():
     assert EvalCase is not None
     assert EvalDataset is not None

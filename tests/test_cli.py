@@ -710,3 +710,52 @@ def test_cli_regression_fails_on_performance_regressions(tmp_path, capsys):
     assert "latency regression: YES" in captured.out
     assert "cost regression: YES" in captured.out
     assert "error-rate regression: YES" in captured.out
+
+
+def test_format_regression_report_includes_change_summary():
+    comparison = ComparisonResult(
+        baseline_score=0.92,
+        current_score=0.86,
+        score_delta=-0.06,
+        baseline_pass_rate=0.92,
+        current_pass_rate=0.86,
+        pass_rate_delta=-0.06,
+        model_changed=True,
+        prompt_changed=True,
+        dataset_changed=False,
+        evaluator_config_changed=True,
+        model_version_changed=True,
+        prompt_version_changed=False,
+        dataset_version_changed=False,
+    )
+
+    regression_result = RegressionResult(
+        regressed=True,
+        score_regression=True,
+        evaluator_regressions=[],
+    )
+
+    gate_result = GateResult(
+        passed=False,
+        status="failed",
+        reason="Regression detected: quality",
+    )
+
+    baseline = EvaluationRun(results=[])
+    current = EvaluationRun(results=[])
+
+    output = format_regression_report(
+        comparison,
+        regression_result,
+        gate_result,
+        baseline,
+        current,
+    )
+
+    assert "Changes:" in output
+    assert "model: changed" in output
+    assert "model version: changed" in output
+    assert "prompt: changed" in output
+    assert "prompt version: unchanged" in output
+    assert "dataset: unchanged" in output
+    assert "evaluator configuration: changed" in output

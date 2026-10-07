@@ -171,6 +171,19 @@ def format_regression_report(
         f"  current model:  {current.metadata.get('model', 'unknown')}",
         f"  dataset:        {current.metadata.get('dataset', 'unknown')}",
         "",
+        "Changes:",
+        f"  model: {'changed' if comparison.model_changed else 'unchanged'}",
+        f"  model version: "
+        f"{'changed' if comparison.model_version_changed else 'unchanged'}",
+        f"  prompt: {'changed' if comparison.prompt_changed else 'unchanged'}",
+        f"  prompt version: "
+        f"{'changed' if comparison.prompt_version_changed else 'unchanged'}",
+        f"  dataset: {'changed' if comparison.dataset_changed else 'unchanged'}",
+        f"  dataset version: "
+        f"{'changed' if comparison.dataset_version_changed else 'unchanged'}",
+        f"  evaluator configuration: "
+        f"{'changed' if comparison.evaluator_config_changed else 'unchanged'}",
+        "",
         "Overall:",
         f"  baseline score: {comparison.baseline_score:.3f}",
         f"  current score:  {comparison.current_score:.3f}",

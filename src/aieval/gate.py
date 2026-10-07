@@ -13,10 +13,27 @@ class GateResult:
 class RegressionGate:
     def check(self, result: RegressionResult) -> GateResult:
         if result.regressed:
+            reasons = []
+
+            if result.score_regression:
+                reasons.append("quality")
+
+            if result.evaluator_regressions:
+                reasons.append("evaluator")
+
+            if result.latency_regression:
+                reasons.append("latency")
+
+            if result.cost_regression:
+                reasons.append("cost")
+
+            if result.error_rate_regression:
+                reasons.append("error rate")
+
             return GateResult(
                 passed=False,
                 status="failed",
-                reason="Regression detected",
+                reason=f"Regression detected: {', '.join(reasons)}",
             )
 
         return GateResult(

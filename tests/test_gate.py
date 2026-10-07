@@ -1,6 +1,6 @@
 from aieval.comparison import ComparisonResult
 from aieval.gate import GateResult, RegressionGate
-from aieval.regression import RegressionConfig, RegressionDetector
+from aieval.regression import RegressionConfig, RegressionDetector, RegressionResult
 
 
 def test_regression_gate_passes_when_no_regression():
@@ -98,3 +98,39 @@ def test_regression_gate_returns_one_for_failed_gate():
     gate_result = gate.check(result)
 
     assert gate.exit_code(gate_result) == 1
+
+
+def test_regression_gate_reports_regression_reasons():
+    result = RegressionResult(
+        regressed=True,
+        score_regression=True,
+        evaluator_regressions=["exact_match"],
+        latency_regression=True,
+        cost_regression=False,
+        error_rate_regression=False,
+    )
+
+    gate_result = RegressionGate().check(result)
+
+    assert gate_result.passed is False
+    assert gate_result.status == "failed"
+    assert "quality" in gate_result.reason.lower()
+    assert "latency" in gate_result.reason.lower()
+
+
+def test_regression_gate_reports_cost_and_error_rate_reasons():
+    result = RegressionResult(
+        regressed=True,
+        score_regression=False,
+        evaluator_regressions=[],
+        latency_regression=False,
+        cost_regression=True,
+        error_rate_regression=True,
+    )
+
+    gate_result = RegressionGate().check(result)
+
+    assert gate_result.passed is False
+    assert gate_result.status == "failed"
+    assert "cost" in gate_result.reason.lower()
+    assert "error rate" in gate_result.reason.lower()
