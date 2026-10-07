@@ -616,3 +616,12 @@ def test_experiment_store_load_rejects_unsupported_schema_version(tmp_path):
 
     with pytest.raises(ValueError, match="Unsupported experiment store schema version"):
         store.load("missing-experiment")
+
+
+def test_experiment_store_rejects_invalid_json(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    store.path.write_text("{invalid json")
+
+    with pytest.raises(ValueError, match="Invalid experiment store"):
+        store.list()

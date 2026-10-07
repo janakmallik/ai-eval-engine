@@ -40,14 +40,7 @@ class ExperimentStore:
         if not self.path.exists():
             return []
 
-        data = json.loads(self.path.read_text())
-
-        schema_version = data.get("_schema_version", 1)
-
-        if schema_version != 1:
-            raise ValueError(
-                f"Unsupported experiment store schema version: {schema_version}"
-            )
+        data = self._read()
 
         return [
             Experiment.from_dict(experiment_data)
@@ -96,7 +89,10 @@ class ExperimentStore:
         if not self.path.exists():
             return {}
 
-        data = json.loads(self.path.read_text())
+        try:
+            data = json.loads(self.path.read_text())
+        except json.JSONDecodeError as exc:
+            raise ValueError("Invalid experiment store JSON") from exc
 
         schema_version = data.get("_schema_version", 1)
 
