@@ -601,3 +601,18 @@ def test_experiment_store_accepts_legacy_file_without_schema_version(tmp_path):
 
     assert loaded.name == experiment.name
     assert loaded.experiment_id == experiment.experiment_id
+
+
+def test_experiment_store_load_rejects_unsupported_schema_version(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    store.path.write_text(
+        json.dumps(
+            {
+                "_schema_version": 999,
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="Unsupported experiment store schema version"):
+        store.load("missing-experiment")
