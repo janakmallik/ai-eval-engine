@@ -17,6 +17,7 @@ class ExperimentStore:
 
         data = self._read()
 
+        data["_schema_version"] = 1
         data[experiment.experiment_id] = experiment.to_dict()
 
         self.path.write_text(
@@ -42,7 +43,9 @@ class ExperimentStore:
         data = json.loads(self.path.read_text())
 
         return [
-            Experiment.from_dict(experiment_data) for experiment_data in data.values()
+            Experiment.from_dict(experiment_data)
+            for experiment_id, experiment_data in data.items()
+            if experiment_id != "_schema_version"
         ]
 
     def find(

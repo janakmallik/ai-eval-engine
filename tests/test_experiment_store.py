@@ -545,3 +545,28 @@ def test_experiment_store_can_find_config_based_experiment(tmp_path):
 
     assert found is not None
     assert found.experiment_id == experiment.experiment_id
+
+
+def test_experiment_store_writes_schema_version(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+    experiment = create_experiment()
+
+    store.save(experiment)
+
+    data = json.loads(store.path.read_text())
+
+    assert data["_schema_version"] == 1
+
+
+def test_experiment_store_schema_version_does_not_appear_as_experiment(
+    tmp_path,
+):
+    store = ExperimentStore(tmp_path / "experiments.json")
+    experiment = create_experiment()
+
+    store.save(experiment)
+
+    experiments = store.list()
+
+    assert len(experiments) == 1
+    assert all(isinstance(item, Experiment) for item in experiments)
