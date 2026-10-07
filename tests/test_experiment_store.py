@@ -585,3 +585,19 @@ def test_experiment_store_rejects_unsupported_schema_version(tmp_path):
 
     with pytest.raises(ValueError, match="Unsupported experiment store schema version"):
         store.list()
+
+
+def test_experiment_store_accepts_legacy_file_without_schema_version(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+    experiment = create_experiment()
+
+    legacy_data = {
+        experiment.experiment_id: experiment.to_dict(),
+    }
+
+    store.path.write_text(json.dumps(legacy_data))
+
+    loaded = store.load(experiment.experiment_id)
+
+    assert loaded.name == experiment.name
+    assert loaded.experiment_id == experiment.experiment_id
