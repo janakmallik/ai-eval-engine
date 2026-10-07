@@ -34,7 +34,7 @@ def fake_model(question: str) -> str:
 results = evaluate_dataset(
     model=fake_model,
     dataset=dataset,
-    evaluator=ExactMatchEvaluator(),
+    evaluators=[ExactMatchEvaluator()],
 )
 
 print("Evaluation Summary")
