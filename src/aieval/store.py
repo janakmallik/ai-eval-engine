@@ -114,6 +114,15 @@ class ExperimentStore:
             ),
         )
 
+        if "config" in data:
+            config = EvaluationConfig.from_dict(data["config"])
+
+            return Experiment(
+                name=data["name"],
+                config=config,
+                run=run,
+            )
+
         return Experiment(
             name=data["name"],
             model=data["model"],

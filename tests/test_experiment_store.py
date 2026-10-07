@@ -7,6 +7,7 @@ import json
 
 import pytest
 
+from aieval.config import EvaluationConfig
 from aieval.experiment import Experiment
 from aieval.run import EvaluationRun
 from aieval.store import ExperimentStore
@@ -459,3 +460,30 @@ def test_experiment_store_preserves_trace_data(tmp_path):
     assert len(loaded.run.trace.spans) == 1
     assert loaded.run.trace.spans[0].name == "evaluation"
     assert loaded.run.trace.spans[0].attributes["test.key"] == "test-value"
+
+
+def test_experiment_store_preserves_config_based_experiment_id(tmp_path):
+    config = EvaluationConfig(
+        model="qa-model",
+        model_version="v1",
+        dataset="qa-dataset",
+        dataset_version="v1",
+        prompt="Answer using the context.",
+        prompt_version="v1",
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    store.save(experiment)
+
+    loaded = store.load(experiment.experiment_id)
+
+    assert loaded.config is not None
+    assert loaded.config.config_id == config.config_id
+    assert loaded.experiment_id == experiment.experiment_id

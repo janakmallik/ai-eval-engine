@@ -1,11 +1,15 @@
-from aieval import EvaluationConfig, EvaluationRun, Experiment, ExperimentStore
+from aieval import (
+    EvaluationConfig,
+    EvaluationRun,
+    Experiment,
+    ExperimentStore,
+)
 
 
-def test_experiment_can_be_created_from_public_api():
+def test_experiment_public_api(tmp_path):
     config = EvaluationConfig(
         model="qa-model",
-        dataset="qa-v1",
-        model_version="v1",
+        dataset="qa-dataset",
     )
 
     run = EvaluationRun(results=[])
@@ -16,10 +20,13 @@ def test_experiment_can_be_created_from_public_api():
         run=run,
     )
 
-    assert experiment.name == "baseline"
-    assert experiment.model == "qa-model"
-    assert experiment.dataset == "qa-v1"
-    assert experiment.model_version == "v1"
+    store = ExperimentStore(tmp_path / "experiments.json")
 
-    def test_experiment_store_is_available_from_public_api():
-        assert ExperimentStore is not None
+    store.save(experiment)
+    loaded = store.load(experiment.experiment_id)
+
+    assert config.model == "qa-model"
+    assert experiment.name == "baseline"
+    assert experiment.run is run
+    assert loaded.name == "baseline"
+    assert loaded.experiment_id == experiment.experiment_id
