@@ -516,3 +516,32 @@ def test_experiment_store_overwrites_config_based_experiment(tmp_path):
 
     assert loaded.name == "updated"
     assert loaded.experiment_id == experiment.experiment_id
+
+
+def test_experiment_store_can_find_config_based_experiment(tmp_path):
+    config = EvaluationConfig(
+        model="qa-model",
+        model_version="v1",
+        dataset="qa-dataset",
+        dataset_version="v1",
+        prompt="Answer using the context.",
+        prompt_version="v1",
+    )
+
+    experiment = Experiment.from_config(
+        name="baseline",
+        config=config,
+        run=EvaluationRun(results=[]),
+    )
+
+    store = ExperimentStore(tmp_path / "experiments.json")
+    store.save(experiment)
+
+    found = store.find(
+        name="baseline",
+        model="qa-model",
+        model_version="v1",
+    )
+
+    assert found is not None
+    assert found.experiment_id == experiment.experiment_id
