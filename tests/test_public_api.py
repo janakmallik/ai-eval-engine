@@ -36,3 +36,13 @@ def test_public_api_exports_core_v1_objects():
     assert LengthEvaluator is not None
 
     assert evaluate_dataset is not None
+
+
+def test_public_api_exposes_tracing_components():
+    import aieval
+
+    assert aieval.Trace
+    assert aieval.Span
+    assert aieval.ModelUsage
+    assert aieval.ModelResponse
+    assert aieval.ToolResponse

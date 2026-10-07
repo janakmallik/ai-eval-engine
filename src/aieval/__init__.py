@@ -13,27 +13,37 @@ from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.runner import evaluate_dataset
 from aieval.store import ExperimentStore
+from aieval.tracing.response import ModelResponse
+from aieval.tracing.span import Span
+from aieval.tracing.tool import ToolResponse
+from aieval.tracing.trace import Trace
+from aieval.tracing.usage import ModelUsage
 
 __all__ = [
+    "ComparisonResult",
+    "ContainsEvaluator",
     "EvalCase",
     "EvalDataset",
+    "EvaluationConfig",
     "EvaluationContext",
     "EvaluationResult",
     "EvaluationRun",
     "ExactMatchEvaluator",
-    "ContainsEvaluator",
-    "SimilarityEvaluator",
-    "LengthEvaluator",
-    "evaluate_dataset",
-    "EvaluationConfig",
     "Experiment",
     "ExperimentStore",
-    "ComparisonResult",
-    "compare_runs",
-    "compare_experiments",
-    "RegressionResult",
+    "GateResult",
+    "LengthEvaluator",
+    "ModelResponse",
+    "ModelUsage",
     "RegressionConfig",
     "RegressionDetector",
-    "GateResult",
     "RegressionGate",
+    "RegressionResult",
+    "SimilarityEvaluator",
+    "Span",
+    "ToolResponse",
+    "Trace",
+    "compare_experiments",
+    "compare_runs",
+    "evaluate_dataset",
 ]
