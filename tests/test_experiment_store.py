@@ -433,3 +433,29 @@ def test_experiment_store_preserves_trace(tmp_path):
     loaded = store.load(experiment.experiment_id)
 
     assert loaded.run.trace is not None
+
+
+def test_experiment_store_preserves_trace_data(tmp_path):
+    from aieval.tracing.trace import Trace
+
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    trace = Trace()
+
+    with trace.start_span("evaluation") as span:
+        span.set_attribute("test.key", "test-value")
+
+    trace.end()
+
+    experiment = create_experiment()
+    experiment.run.trace = trace
+
+    store.save(experiment)
+
+    loaded = store.load(experiment.experiment_id)
+
+    assert loaded.run.trace is not None
+    assert loaded.run.trace.trace_id == trace.trace_id
+    assert len(loaded.run.trace.spans) == 1
+    assert loaded.run.trace.spans[0].name == "evaluation"
+    assert loaded.run.trace.spans[0].attributes["test.key"] == "test-value"
