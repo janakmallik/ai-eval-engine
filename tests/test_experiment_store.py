@@ -570,3 +570,18 @@ def test_experiment_store_schema_version_does_not_appear_as_experiment(
 
     assert len(experiments) == 1
     assert all(isinstance(item, Experiment) for item in experiments)
+
+
+def test_experiment_store_rejects_unsupported_schema_version(tmp_path):
+    store = ExperimentStore(tmp_path / "experiments.json")
+
+    store.path.write_text(
+        json.dumps(
+            {
+                "_schema_version": 999,
+            }
+        )
+    )
+
+    with pytest.raises(ValueError, match="Unsupported experiment store schema version"):
+        store.list()
