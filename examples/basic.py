@@ -1,6 +1,8 @@
-from aieval.dataset import EvalCase
-from aieval.evaluators.exact_match import ExactMatchEvaluator
-from aieval.runner import evaluate_dataset
+from aieval import (
+    EvalCase,
+    ExactMatchEvaluator,
+    evaluate_dataset,
+)
 
 dataset = [
     EvalCase(
