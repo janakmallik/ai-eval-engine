@@ -1,4 +1,5 @@
 import json
+import time
 
 import pytest
 
@@ -354,13 +355,13 @@ def test_json_reporter_includes_trace_summary(tmp_path):
     trace = Trace()
 
     root = trace.start_span("evaluation")
+    time.sleep(0.001)
     root.end()
 
     model = trace.start_span("model")
     model.set_status("ok")
+    time.sleep(0.002)
     model.end()
-
-    trace.end()
 
     run = EvaluationRun(
         results=[],
@@ -374,10 +375,7 @@ def test_json_reporter_includes_trace_summary(tmp_path):
 
     data = json.loads(path.read_text())
 
-    summary = data["trace_summary"]
-    summary["slowest_spans"] = sorted(summary["slowest_spans"], key=lambda s: s["name"])
-
-    assert summary == {
+    assert data["trace_summary"] == {
         "trace_id": trace.trace_id,
         "span_count": 2,
         "error_count": 0,
@@ -386,19 +384,16 @@ def test_json_reporter_includes_trace_summary(tmp_path):
         "total_duration": pytest.approx(root.duration + model.duration),
         "total_cost": 0.0,
         "root_span_count": 2,
-        "slowest_spans": sorted(
-            [
-                {
-                    "name": "evaluation",
-                    "duration": pytest.approx(root.duration),
-                },
-                {
-                    "name": "model",
-                    "duration": pytest.approx(model.duration),
-                },
-            ],
-            key=lambda s: s["name"],
-        ),
+        "slowest_spans": [
+            {
+                "name": "model",
+                "duration": pytest.approx(model.duration),
+            },
+            {
+                "name": "evaluation",
+                "duration": pytest.approx(root.duration),
+            },
+        ],
         "spans": [
             {
                 "span_id": root.span_id,
@@ -414,3 +409,6 @@ def test_json_reporter_includes_trace_summary(tmp_path):
             },
         ],
     }
+
+
+# version 1
