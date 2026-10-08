@@ -11,7 +11,7 @@ from aieval.gate import GateResult, RegressionGate
 from aieval.regression import RegressionConfig, RegressionDetector, RegressionResult
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
-from aieval.runner import evaluate_dataset
+from aieval.runner import evaluate_dataset, evaluate_with_config
 from aieval.store import ExperimentStore
 from aieval.tracing.response import ModelResponse
 from aieval.tracing.span import Span
@@ -46,4 +46,5 @@ __all__ = [
     "compare_experiments",
     "compare_runs",
     "evaluate_dataset",
+    "evaluate_with_config",
 ]

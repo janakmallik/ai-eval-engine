@@ -46,3 +46,9 @@ def test_public_api_exposes_tracing_components():
     assert aieval.ModelUsage
     assert aieval.ModelResponse
     assert aieval.ToolResponse
+
+
+def test_public_api_exposes_evaluate_with_config():
+    import aieval
+
+    assert aieval.evaluate_with_config
