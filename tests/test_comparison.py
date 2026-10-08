@@ -273,3 +273,50 @@ def test_compare_runs_uses_trace_metrics():
 
     assert comparison.baseline_latency == pytest.approx(baseline_trace.duration)
     assert comparison.current_latency == pytest.approx(current_trace.duration)
+
+
+def test_compare_runs_uses_trace_error_rate():
+    from aieval.tracing.trace import Trace
+
+    baseline_trace = Trace()
+
+    baseline_success = baseline_trace.start_span("success")
+    baseline_success.end()
+
+    baseline_error = baseline_trace.start_span("error")
+    baseline_error.status = "error"
+    baseline_error.end()
+
+    baseline_trace.end()
+
+    current_trace = Trace()
+
+    current_success_1 = current_trace.start_span("success")
+    current_success_1.end()
+
+    current_success_2 = current_trace.start_span("success")
+    current_success_2.end()
+
+    current_error = current_trace.start_span("error")
+    current_error.status = "error"
+    current_error.end()
+
+    current_trace.end()
+
+    baseline = EvaluationRun(
+        results=[],
+        metadata={"error_rate": 0.99},
+        trace=baseline_trace,
+    )
+
+    current = EvaluationRun(
+        results=[],
+        metadata={"error_rate": 0.99},
+        trace=current_trace,
+    )
+
+    comparison = compare_runs(baseline, current)
+
+    assert comparison.baseline_error_rate == pytest.approx(0.5)
+    assert comparison.current_error_rate == pytest.approx(1 / 3)
+    assert comparison.error_rate_delta == pytest.approx(1 / 3 - 0.5)

@@ -86,8 +86,16 @@ def compare_runs(
         else float(current.metadata.get("cost", 0.0))
     )
 
-    baseline_error_rate = float(baseline.metadata.get("error_rate", 0.0))
-    current_error_rate = float(current.metadata.get("error_rate", 0.0))
+    baseline_error_rate = (
+        baseline.trace.summary()["error_count"] / baseline.trace.summary()["span_count"]
+        if baseline.trace is not None and baseline.trace.summary()["span_count"] > 0
+        else float(baseline.metadata.get("error_rate", 0.0))
+    )
+    current_error_rate = (
+        current.trace.summary()["error_count"] / current.trace.summary()["span_count"]
+        if current.trace is not None and current.trace.summary()["span_count"] > 0
+        else float(current.metadata.get("error_rate", 0.0))
+    )
 
     return ComparisonResult(
         baseline_score=baseline.score,

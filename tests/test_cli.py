@@ -759,3 +759,142 @@ def test_format_regression_report_includes_change_summary():
     assert "prompt version: unchanged" in output
     assert "dataset: unchanged" in output
     assert "evaluator configuration: changed" in output
+
+
+def test_cli_regression_uses_trace_metrics_from_json_reports(
+    tmp_path,
+    capsys,
+):
+    from aieval.tracing.usage import ModelUsage
+
+    baseline_trace = Trace()
+    baseline_model = baseline_trace.start_model(
+        model="model",
+        provider="test",
+    )
+    baseline_model.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.001,
+            output_cost=0.002,
+        )
+    )
+    baseline_model.end()
+    baseline_trace.end()
+
+    current_trace = Trace()
+    current_model = current_trace.start_model(
+        model="model",
+        provider="test",
+    )
+    current_model.record_usage(
+        ModelUsage(
+            input_tokens=200,
+            output_tokens=100,
+            input_cost=0.002,
+            output_cost=0.004,
+        )
+    )
+    current_model.end()
+    current_trace.end()
+
+    baseline_run = EvaluationRun(
+        results=[],
+        trace=baseline_trace,
+    )
+
+    current_run = EvaluationRun(
+        results=[],
+        trace=current_trace,
+    )
+
+    baseline_path = tmp_path / "baseline.json"
+    current_path = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(baseline_run, baseline_path)
+    reporter.write(current_run, current_path)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline_path),
+            "--current",
+            str(current_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "baseline cost: $0.003" in captured.out
+    assert "current cost:  $0.006" in captured.out
+    assert "cost delta:    $+0.003" in captured.out
+
+
+def test_cli_regression_uses_trace_error_rate_from_json_reports(
+    tmp_path,
+    capsys,
+):
+    baseline_trace = Trace()
+
+    baseline_success_1 = baseline_trace.start_span("success")
+    baseline_success_1.end()
+
+    baseline_success_2 = baseline_trace.start_span("success")
+    baseline_success_2.end()
+
+    baseline_error = baseline_trace.start_span("error")
+    baseline_error.status = "error"
+    baseline_error.end()
+
+    baseline_trace.end()
+
+    current_trace = Trace()
+
+    current_success = current_trace.start_span("success")
+    current_success.end()
+
+    current_error = current_trace.start_span("error")
+    current_error.status = "error"
+    current_error.end()
+
+    current_trace.end()
+
+    baseline_run = EvaluationRun(
+        results=[],
+        metadata={"error_rate": 0.99},
+        trace=baseline_trace,
+    )
+
+    current_run = EvaluationRun(
+        results=[],
+        metadata={"error_rate": 0.99},
+        trace=current_trace,
+    )
+
+    baseline_path = tmp_path / "baseline.json"
+    current_path = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(baseline_run, baseline_path)
+    reporter.write(current_run, current_path)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline_path),
+            "--current",
+            str(current_path),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "baseline error rate: 0.333" in captured.out
+    assert "current error rate:  0.500" in captured.out
+    assert "error-rate delta:    +0.167" in captured.out
