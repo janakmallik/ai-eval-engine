@@ -2807,3 +2807,110 @@ def test_trace_performance_metrics_count_model_errors():
     assert metrics.error_rate == 0.5
     assert metrics.retry_count == 2
     assert metrics.timeout_count == 1
+
+
+def test_trace_performance_metrics_ignore_incomplete_model_spans():
+    trace = Trace()
+
+    completed = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    completed.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.01,
+            output_cost=0.02,
+        )
+    )
+    completed.end()
+
+    incomplete = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    incomplete.record_usage(
+        ModelUsage(
+            input_tokens=999,
+            output_tokens=999,
+            input_cost=9.0,
+            output_cost=9.0,
+        )
+    )
+
+    metrics = trace.performance_metrics()
+
+    assert metrics.request_count == 1
+    assert metrics.input_tokens == 100
+    assert metrics.output_tokens == 50
+    assert metrics.total_cost == 0.03
+
+
+def test_trace_performance_metrics_include_failed_model_requests():
+    trace = Trace()
+
+    success = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    success.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.01,
+            output_cost=0.02,
+        )
+    )
+    success.end()
+
+    failure = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    failure.record_usage(
+        ModelUsage(
+            input_tokens=80,
+            output_tokens=20,
+            input_cost=0.005,
+            output_cost=0.005,
+        )
+    )
+    failure.set_status("error", "model failed")
+    failure.end()
+
+    metrics = trace.performance_metrics()
+
+    assert metrics.request_count == 2
+    assert metrics.successful_request_count == 1
+    assert metrics.error_count == 1
+    assert metrics.error_rate == 0.5
+    assert metrics.input_tokens == 180
+    assert metrics.output_tokens == 70
+    assert metrics.total_cost == 0.04
+
+
+def test_trace_performance_metrics_aggregate_retries_and_timeouts():
+    trace = Trace()
+
+    first = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    first.record_retry()
+    first.record_retry()
+    first.end()
+
+    second = trace.start_model(
+        model="test-model",
+        provider="test",
+    )
+    second.record_retry()
+    second.record_timeout()
+    second.end()
+
+    metrics = trace.performance_metrics()
+
+    assert metrics.request_count == 2
+    assert metrics.retry_count == 3
+    assert metrics.timeout_count == 1

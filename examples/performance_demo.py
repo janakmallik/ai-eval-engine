@@ -41,9 +41,8 @@ def main() -> None:
         )
     )
 
-    second.end()
-
     second.record_retry()
+    second.end()
 
     run = EvaluationRun(
         results=[],
