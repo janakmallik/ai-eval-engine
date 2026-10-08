@@ -185,6 +185,13 @@ class Span:
     def record_tool_result(self, result_count: int) -> None:
         self.set_attribute("tool.result_count", result_count)
 
+    def record_retry(self) -> None:
+        retries = self.attributes.get("model.retry_count", 0)
+        self.set_attribute("model.retry_count", int(retries) + 1)
+
+    def record_timeout(self) -> None:
+        self.set_attribute("model.timeout", True)
+
     # once a span has ended, subsequent span mutations such as adding events should be ignored.
     def add_event(
         self,

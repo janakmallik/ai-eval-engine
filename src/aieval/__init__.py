@@ -8,6 +8,7 @@ from aieval.evaluators.length import LengthEvaluator
 from aieval.evaluators.similarity import SimilarityEvaluator
 from aieval.experiment import Experiment
 from aieval.gate import GateResult, RegressionGate
+from aieval.metrics import PerformanceMetrics
 from aieval.regression import RegressionConfig, RegressionDetector, RegressionResult
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
@@ -47,4 +48,5 @@ __all__ = [
     "compare_runs",
     "evaluate_dataset",
     "evaluate_with_config",
+    "PerformanceMetrics",
 ]

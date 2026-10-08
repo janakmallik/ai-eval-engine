@@ -2722,3 +2722,88 @@ def test_trace_summary_includes_slowest_spans():
     assert summary["slowest_spans"][0]["name"] == "evaluation"
     assert summary["slowest_spans"][1]["name"] == "slow"
     assert summary["slowest_spans"][2]["name"] == "fast"
+
+
+def test_trace_performance_metrics_aggregate_model_spans():
+    trace = Trace()
+
+    first = trace.start_model(
+        model="model-a",
+        provider="provider-a",
+    )
+    first.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.01,
+            output_cost=0.02,
+        )
+    )
+    first.end()
+
+    second = trace.start_model(
+        model="model-a",
+        provider="provider-a",
+    )
+    second.record_usage(
+        ModelUsage(
+            input_tokens=200,
+            output_tokens=100,
+            input_cost=0.02,
+            output_cost=0.03,
+        )
+    )
+    second.end()
+
+    retrieval = trace.start_retrieval(
+        query="Paris",
+        top_k=5,
+    )
+    retrieval.end()
+
+    metrics = trace.performance_metrics()
+
+    assert metrics.request_count == 2
+    assert metrics.successful_request_count == 2
+    assert metrics.error_count == 0
+
+    assert metrics.input_tokens == 300
+    assert metrics.output_tokens == 150
+    assert metrics.total_tokens == 450
+
+    assert metrics.total_cost == 0.08
+    assert metrics.cost_per_request == 0.04
+
+    assert metrics.average_latency >= 0.0
+    assert metrics.p50_latency >= 0.0
+    assert metrics.p95_latency >= 0.0
+
+
+def test_trace_performance_metrics_count_model_errors():
+    trace = Trace()
+
+    success = trace.start_model(
+        model="model-a",
+        provider="provider-a",
+    )
+    success.end()
+
+    failure = trace.start_model(
+        model="model-a",
+        provider="provider-a",
+    )
+    failure.set_status("error", "model failed")
+    failure.end()
+
+    failure.record_retry()
+    failure.record_retry()
+    failure.record_timeout()
+
+    metrics = trace.performance_metrics()
+
+    assert metrics.request_count == 2
+    assert metrics.successful_request_count == 1
+    assert metrics.error_count == 1
+    assert metrics.error_rate == 0.5
+    assert metrics.retry_count == 2
+    assert metrics.timeout_count == 1

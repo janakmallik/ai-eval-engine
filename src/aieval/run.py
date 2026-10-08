@@ -2,6 +2,7 @@ import hashlib
 import json
 from dataclasses import dataclass, field
 
+from aieval.metrics import PerformanceMetrics
 from aieval.result import EvaluationResult
 from aieval.summary import EvaluationSummary
 from aieval.tracing.trace import Trace
@@ -133,3 +134,9 @@ class EvaluationRun:
             results=results,
             metadata=dict(data.get("metadata", {})),
         )
+
+    def performance_metrics(self) -> PerformanceMetrics | None:
+        if self.trace is None:
+            return None
+
+        return self.trace.performance_metrics()

@@ -1,6 +1,7 @@
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
 from aieval.tracing.trace import Trace
+from aieval.tracing.usage import ModelUsage
 
 
 def test_evaluation_run():
@@ -369,3 +370,33 @@ def test_evaluation_run_to_dict_includes_trace_summary():
     data = run.to_dict()
 
     assert data["trace_summary"] == trace.summary()
+
+
+def test_evaluation_run_exposes_performance_metrics():
+    trace = Trace()
+
+    model_span = trace.start_model(
+        model="qa-model",
+        provider="test",
+    )
+    model_span.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.01,
+            output_cost=0.02,
+        )
+    )
+    model_span.end()
+
+    run = EvaluationRun(
+        results=[],
+        trace=trace,
+    )
+
+    metrics = run.performance_metrics()
+
+    assert metrics is not None
+    assert metrics.request_count == 1
+    assert metrics.total_tokens == 150
+    assert metrics.total_cost == 0.03

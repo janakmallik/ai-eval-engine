@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 from typing import Self
 from uuid import uuid4
 
+from aieval.metrics import PerformanceMetrics
 from aieval.tracing.span import Span
 
 
@@ -257,6 +258,61 @@ class Trace:
         metadata: dict[str, object],
     ) -> None:
         self.metadata.update(metadata)
+
+    def performance_metrics(self) -> PerformanceMetrics:
+        model_spans = [span for span in self.spans if span.name == "model"]
+
+        completed_model_spans = [
+            span for span in model_spans if span.duration is not None
+        ]
+
+        latencies = [
+            span.duration for span in completed_model_spans if span.duration is not None
+        ]
+
+        input_tokens = sum(
+            span.usage.input_tokens
+            for span in completed_model_spans
+            if span.usage is not None
+        )
+
+        output_tokens = sum(
+            span.usage.output_tokens
+            for span in completed_model_spans
+            if span.usage is not None
+        )
+
+        total_cost = sum(
+            span.usage.total_cost
+            for span in completed_model_spans
+            if span.usage is not None
+        )
+
+        error_count = sum(span.status == "error" for span in completed_model_spans)
+
+        successful_request_count = len(completed_model_spans) - error_count
+
+        retry_count = sum(
+            int(span.attributes.get("model.retry_count", 0))
+            for span in completed_model_spans
+        )
+
+        timeout_count = sum(
+            bool(span.attributes.get("model.timeout", False))
+            for span in completed_model_spans
+        )
+
+        return PerformanceMetrics.from_latencies(
+            request_count=len(completed_model_spans),
+            successful_request_count=successful_request_count,
+            error_count=error_count,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            total_cost=total_cost,
+            latencies=latencies,
+            retry_count=retry_count,
+            timeout_count=timeout_count,
+        )
 
     def to_dict(self) -> dict:
         return {

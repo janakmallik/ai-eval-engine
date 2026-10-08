@@ -7,6 +7,7 @@ from aieval import (
     EvaluationRun,
     ExactMatchEvaluator,
     LengthEvaluator,
+    PerformanceMetrics,
     SimilarityEvaluator,
     evaluate_dataset,
 )
@@ -52,3 +53,7 @@ def test_public_api_exposes_evaluate_with_config():
     import aieval
 
     assert aieval.evaluate_with_config
+
+
+def test_performance_metrics_is_public():
+    assert PerformanceMetrics is not None

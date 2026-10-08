@@ -386,13 +386,14 @@ def test_json_reporter_includes_trace_summary(tmp_path):
         "root_span_count": 2,
         "slowest_spans": [
             {
-                "name": "model",
-                "duration": pytest.approx(model.duration),
-            },
-            {
-                "name": "evaluation",
-                "duration": pytest.approx(root.duration),
-            },
+                "name": span.name,
+                "duration": pytest.approx(span.duration),
+            }
+            for span in sorted(
+                [root, model],
+                key=lambda span: span.duration or 0.0,
+                reverse=True,
+            )
         ],
         "spans": [
             {
@@ -409,6 +410,3 @@ def test_json_reporter_includes_trace_summary(tmp_path):
             },
         ],
     }
-
-
-# version 1
