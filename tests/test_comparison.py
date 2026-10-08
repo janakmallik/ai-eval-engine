@@ -199,3 +199,77 @@ def test_compare_runs_includes_latency_cost_and_error_rate():
     assert comparison.baseline_error_rate == 0.02
     assert comparison.current_error_rate == 0.05
     assert comparison.error_rate_delta == pytest.approx(0.03)
+
+
+def test_compare_runs_uses_trace_metrics():
+    from aieval.tracing.trace import Trace
+    from aieval.tracing.usage import ModelUsage
+
+    baseline_trace = Trace()
+    baseline_model = baseline_trace.start_model(
+        model="model",
+        provider="test",
+    )
+    baseline_model.record_usage(
+        ModelUsage(
+            input_tokens=100,
+            output_tokens=50,
+            input_cost=0.001,
+            output_cost=0.002,
+        )
+    )
+    baseline_model.end()
+    baseline_trace.end()
+
+    current_trace = Trace()
+    current_model = current_trace.start_model(
+        model="model",
+        provider="test",
+    )
+    current_model.record_usage(
+        ModelUsage(
+            input_tokens=200,
+            output_tokens=100,
+            input_cost=0.002,
+            output_cost=0.004,
+        )
+    )
+    current_model.end()
+    current_trace.end()
+
+    baseline = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="1",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ],
+        trace=baseline_trace,
+    )
+
+    current = EvaluationRun(
+        results=[
+            EvaluationResult(
+                case_id="1",
+                evaluator_name="exact_match",
+                expected="Paris",
+                actual="Paris",
+                score=1.0,
+                passed=True,
+            )
+        ],
+        trace=current_trace,
+    )
+
+    comparison = compare_runs(baseline, current)
+
+    assert comparison.baseline_cost == pytest.approx(0.003)
+    assert comparison.current_cost == pytest.approx(0.006)
+    assert comparison.cost_delta == pytest.approx(0.003)
+
+    assert comparison.baseline_latency == pytest.approx(baseline_trace.duration)
+    assert comparison.current_latency == pytest.approx(current_trace.duration)

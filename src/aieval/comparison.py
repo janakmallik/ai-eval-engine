@@ -64,11 +64,27 @@ def compare_runs(
 
         evaluator_deltas[evaluator_name] = current_score - baseline_score
 
-    baseline_latency = float(baseline.metadata.get("latency", 0.0))
-    current_latency = float(current.metadata.get("latency", 0.0))
+    baseline_latency = (
+        baseline.trace.duration
+        if baseline.trace is not None
+        else float(baseline.metadata.get("latency", 0.0))
+    )
+    current_latency = (
+        current.trace.duration
+        if current.trace is not None
+        else float(current.metadata.get("latency", 0.0))
+    )
 
-    baseline_cost = float(baseline.metadata.get("cost", 0.0))
-    current_cost = float(current.metadata.get("cost", 0.0))
+    baseline_cost = (
+        baseline.trace.summary()["total_cost"]
+        if baseline.trace is not None
+        else float(baseline.metadata.get("cost", 0.0))
+    )
+    current_cost = (
+        current.trace.summary()["total_cost"]
+        if current.trace is not None
+        else float(current.metadata.get("cost", 0.0))
+    )
 
     baseline_error_rate = float(baseline.metadata.get("error_rate", 0.0))
     current_error_rate = float(current.metadata.get("error_rate", 0.0))
