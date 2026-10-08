@@ -1,8 +1,11 @@
+import time
+
 import pytest
 
 from aieval.comparison import compare_runs
 from aieval.result import EvaluationResult
 from aieval.run import EvaluationRun
+from aieval.tracing.trace import Trace
 
 
 def test_compare_runs():
@@ -320,3 +323,65 @@ def test_compare_runs_uses_trace_error_rate():
     assert comparison.baseline_error_rate == pytest.approx(0.5)
     assert comparison.current_error_rate == pytest.approx(1 / 3)
     assert comparison.error_rate_delta == pytest.approx(1 / 3 - 0.5)
+
+
+def test_compare_runs_uses_model_request_metrics():
+    baseline_trace = Trace()
+
+    with baseline_trace.start_span("evaluation"):
+        baseline_model = baseline_trace.start_model(
+            model="test-model",
+            provider="test",
+        )
+        time.sleep(0.001)
+        baseline_model.end()
+
+        baseline_retrieval = baseline_trace.start_retrieval(
+            query="test",
+            top_k=1,
+        )
+        baseline_retrieval.set_status("error", "retrieval failed")
+        baseline_retrieval.end()
+
+    current_trace = Trace()
+
+    with current_trace.start_span("evaluation"):
+        current_model = current_trace.start_model(
+            model="test-model",
+            provider="test",
+        )
+        current_model.set_status("error", "model failed")
+        time.sleep(0.002)
+        current_model.end()
+
+        current_retrieval = current_trace.start_retrieval(
+            query="test",
+            top_k=1,
+        )
+        current_retrieval.end()
+
+    baseline = EvaluationRun(
+        results=[],
+        trace=baseline_trace,
+    )
+
+    current = EvaluationRun(
+        results=[],
+        trace=current_trace,
+    )
+
+    baseline_metrics = baseline_trace.performance_metrics()
+    current_metrics = current_trace.performance_metrics()
+
+    comparison = compare_runs(baseline, current)
+
+    assert comparison.baseline_latency == pytest.approx(
+        baseline_metrics.average_latency
+    )
+    assert comparison.current_latency == pytest.approx(current_metrics.average_latency)
+    assert comparison.latency_delta == pytest.approx(
+        current_metrics.average_latency - baseline_metrics.average_latency
+    )
+
+    assert comparison.baseline_error_rate == 0.0
+    assert comparison.current_error_rate == 1.0

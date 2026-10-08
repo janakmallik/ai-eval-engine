@@ -64,37 +64,80 @@ def compare_runs(
 
         evaluator_deltas[evaluator_name] = current_score - baseline_score
 
+    baseline_metrics = (
+        baseline.trace.performance_metrics() if baseline.trace is not None else None
+    )
+    current_metrics = (
+        current.trace.performance_metrics() if current.trace is not None else None
+    )
+
     baseline_latency = (
-        baseline.trace.duration
-        if baseline.trace is not None
+        baseline_metrics.average_latency
+        if baseline_metrics is not None
         else float(baseline.metadata.get("latency", 0.0))
     )
     current_latency = (
-        current.trace.duration
-        if current.trace is not None
+        current_metrics.average_latency
+        if current_metrics is not None
         else float(current.metadata.get("latency", 0.0))
     )
 
     baseline_cost = (
-        baseline.trace.summary()["total_cost"]
-        if baseline.trace is not None
+        baseline_metrics.total_cost
+        if baseline_metrics is not None
         else float(baseline.metadata.get("cost", 0.0))
     )
     current_cost = (
-        current.trace.summary()["total_cost"]
-        if current.trace is not None
+        current_metrics.total_cost
+        if current_metrics is not None
         else float(current.metadata.get("cost", 0.0))
     )
 
-    baseline_error_rate = (
-        baseline.trace.summary()["error_count"] / baseline.trace.summary()["span_count"]
-        if baseline.trace is not None and baseline.trace.summary()["span_count"] > 0
-        else float(baseline.metadata.get("error_rate", 0.0))
+    baseline_model_spans = (
+        [
+            span
+            for span in baseline.trace.spans
+            if span.name == "model" and span.duration is not None
+        ]
+        if baseline.trace is not None
+        else []
     )
+    current_model_spans = (
+        [
+            span
+            for span in current.trace.spans
+            if span.name == "model" and span.duration is not None
+        ]
+        if current.trace is not None
+        else []
+    )
+
+    baseline_error_rate = (
+        (
+            sum(span.status == "error" for span in baseline_model_spans)
+            / len(baseline_model_spans)
+        )
+        if baseline_model_spans
+        else (
+            baseline.trace.summary()["error_count"]
+            / baseline.trace.summary()["span_count"]
+            if baseline.trace is not None and baseline.trace.summary()["span_count"] > 0
+            else float(baseline.metadata.get("error_rate", 0.0))
+        )
+    )
+
     current_error_rate = (
-        current.trace.summary()["error_count"] / current.trace.summary()["span_count"]
-        if current.trace is not None and current.trace.summary()["span_count"] > 0
-        else float(current.metadata.get("error_rate", 0.0))
+        (
+            sum(span.status == "error" for span in current_model_spans)
+            / len(current_model_spans)
+        )
+        if current_model_spans
+        else (
+            current.trace.summary()["error_count"]
+            / current.trace.summary()["span_count"]
+            if current.trace is not None and current.trace.summary()["span_count"] > 0
+            else float(current.metadata.get("error_rate", 0.0))
+        )
     )
 
     return ComparisonResult(
