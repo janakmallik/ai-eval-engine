@@ -57,7 +57,7 @@ A production-oriented evaluation system should answer:
 
 ---
 
-# Features
+## Features
 
 ## Evaluation
 
@@ -195,41 +195,77 @@ The CLI also supports regression comparisons against JSON evaluation reports.
 
 ---
 
-# RAG Evaluation
+## RAG Evaluation
 
-`ai-eval-engine` does **not** attempt to be a complete RAG application or vector database.
+`ai-eval-engine` provides evaluation and tracing infrastructure for Retrieval-Augmented Generation (RAG) workflows. It does not implement a vector database or require you to rebuild your application around a particular retrieval framework.
 
-Instead, it provides evaluation and observability infrastructure that can be integrated into RAG systems.
+### RAG pipeline
 
-Retrieval-specific evaluators include:
+The public `RAGPipeline` API connects a retriever and a generator. It optionally supports a reranker and returns a `RAGResult` containing the question, answer, retrieved documents, and execution trace.
+
+```python
+from aieval import RAGPipeline
+
+
+def retrieve(question: str, top_k: int) -> list[str]:
+    documents = [
+        "Paris is the capital of France.",
+        "France is a country in Europe.",
+    ]
+    return documents[:top_k]
+
+
+def generate_answer(question: str, documents: list[str]) -> str:
+    return "Paris is the capital of France."
+
+
+pipeline = RAGPipeline(
+    retriever=retrieve,
+    generator=generate_answer,
+    top_k=2,
+)
+
+result = pipeline.run("What is the capital of France?")
+
+print(result.answer)
+print(result.documents)
+print(result.trace.to_dict())
+```
+
+The retriever and generator are ordinary Python callables, so you can adapt them to your own application or model integration.
+
+### RAG evaluators
+
+The package provides these RAG-oriented evaluators:
 
 - `RetrievalContainsEvaluator`
 - `RetrievalPrecisionEvaluator`
 - `RetrievalRecallEvaluator`
+- `ContextRelevanceEvaluator`
+- `AnswerRelevanceEvaluator`
+- `FaithfulnessEvaluator`
 
-These allow retrieval quality to be evaluated independently from the final generated answer.
+The retrieval evaluators assess retrieval results. The context, answer relevance, and faithfulness evaluators provide lightweight lexical checks of retrieved context and generated answers.
 
-A RAG workflow can therefore be analyzed at multiple levels:
+**Important limitation:** the latter evaluators use word/token overlap heuristics. They are not semantic model-based judges and may miss paraphrases, nuanced relevance, or unsupported claims that require deeper reasoning. Their scores should be interpreted as heuristic signals, not definitive measures of answer quality.
 
-```text
-Query
-  │
-  ▼
-Retrieval
-  │
-  ├── Retrieval quality
-  ├── Retrieved result count
-  └── Retrieval latency
-  │
-  ▼
-Model
-  │
-  ▼
-Generated answer
-  │
-  ▼
-Answer evaluation
+### Running the RAG demo
+
+From the repository root, after installing the package:
+
+```bash
+python examples/rag_demo.py
 ```
+
+The demo runs a deterministic mock retriever and generator, evaluates the result with the three context/answer evaluators, and prints the evaluation scores and trace.
+
+The demo is intended to illustrate the integration API. It does not require a live LLM, embedding model, or vector database.
+
+### RAG tracing
+
+The pipeline records retrieval and generation spans. Retrieval spans include the query, configured `top_k`, and result count. Generation spans include the answer length.
+
+These spans make it possible to inspect key stages of a basic RAG execution. More advanced instrumentation—such as embedding, reranking, token usage, and model-provider-specific latency—depends on additional integration work and is not implied by this basic pipeline.
 
 ---
 
@@ -405,6 +441,14 @@ from aieval import (
     Trace,
     evaluate_dataset,
     evaluate_with_config,
+    RAGPipeline,
+    RAGResult,
+    ContextRelevanceEvaluator,
+    AnswerRelevanceEvaluator,
+    FaithfulnessEvaluator,
+    RetrievalContainsEvaluator,
+    RetrievalPrecisionEvaluator,
+    RetrievalRecallEvaluator,
 )
 ```
 
@@ -428,7 +472,8 @@ python -m venv .venv
 Activate the environment and install:
 
 ```bash
-pip install -e .
+.\.venv\Scripts\Activate.ps1
+python -m pip install -e .
 ```
 
 The package also defines the `aieval` command-line executable.
@@ -527,6 +572,7 @@ ai-eval-engine/
 │       ├── experiment.py
 │       ├── gate.py
 │       ├── normalizers.py
+│       ├── rag.py
 │       ├── regression.py
 │       ├── result.py
 │       ├── run.py
@@ -535,10 +581,13 @@ ai-eval-engine/
 │       ├── summary.py
 │       │
 │       ├── evaluators/
+│       │   ├── answer_relevance.py
 │       │   ├── base.py
 │       │   ├── classification.py
 │       │   ├── contains.py
+│       │   ├── context_relevance.py
 │       │   ├── exact_match.py
+│       │   ├── faithfulness.py
 │       │   ├── length.py
 │       │   ├── llm_judge.py
 │       │   ├── retrieval_contains.py
@@ -559,6 +608,8 @@ ai-eval-engine/
 ├── examples/
 │   ├── basic.py
 │   ├── experiment_demo.py
+│   ├── performance_demo.py
+│   ├── rag_demo.py
 │   ├── regression_demo.py
 │   └── trace_demo.py
 │
@@ -667,6 +718,18 @@ Planned/implemented capabilities include:
 - quality gates
 
 **Status: Substantially implemented**
+
+### V6 — RAG Evaluation
+
+- Public RAG pipeline and result API
+- Retriever and generator integration through Python callables
+- Optional reranking
+- Retrieval-specific evaluation
+- Context relevance, answer relevance, and faithfulness heuristics
+- Retrieval and generation tracing
+- Runnable end-to-end demo
+
+**Status: Core foundation implemented; broader integration and usability validation ongoing.**
 
 ---
 
