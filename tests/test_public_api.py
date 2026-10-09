@@ -75,3 +75,33 @@ def test_faithfulness_evaluator_is_exported_from_aieval():
     from aieval import FaithfulnessEvaluator
 
     assert FaithfulnessEvaluator.__name__ == "FaithfulnessEvaluator"
+
+
+def test_rag_pipeline_is_exported_from_aieval():
+    from aieval import RAGPipeline
+
+    assert RAGPipeline.__name__ == "RAGPipeline"
+
+
+def test_rag_result_is_exported_from_aieval():
+    from aieval import RAGResult
+
+    assert RAGResult.__name__ == "RAGResult"
+
+
+def test_retrieval_contains_evaluator_is_exported_from_aieval():
+    from aieval import RetrievalContainsEvaluator
+
+    assert RetrievalContainsEvaluator.__name__ == "RetrievalContainsEvaluator"
+
+
+def test_retrieval_precision_evaluator_is_exported_from_aieval():
+    from aieval import RetrievalPrecisionEvaluator
+
+    assert RetrievalPrecisionEvaluator.__name__ == "RetrievalPrecisionEvaluator"
+
+
+def test_retrieval_recall_evaluator_is_exported_from_aieval():
+    from aieval import RetrievalRecallEvaluator
+
+    assert RetrievalRecallEvaluator.__name__ == "RetrievalRecallEvaluator"
