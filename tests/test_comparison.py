@@ -274,8 +274,12 @@ def test_compare_runs_uses_trace_metrics():
     assert comparison.current_cost == pytest.approx(0.006)
     assert comparison.cost_delta == pytest.approx(0.003)
 
-    assert comparison.baseline_latency == pytest.approx(baseline_trace.duration)
-    assert comparison.current_latency == pytest.approx(current_trace.duration)
+    assert comparison.baseline_latency == pytest.approx(
+        baseline_trace.performance_metrics().average_latency
+    )
+    assert comparison.current_latency == pytest.approx(
+        current_trace.performance_metrics().average_latency
+    )
 
 
 def test_compare_runs_uses_trace_error_rate():
