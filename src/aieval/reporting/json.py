@@ -17,7 +17,7 @@ class JsonReporter:
 
     def read(self, path: str | Path) -> EvaluationRun:
         input_path = Path(path)
-        data = json.loads(input_path.read_text(encoding="utf-8"))
+        data = json.loads(input_path.read_text(encoding="utf-8-sig"))
 
         results = [EvaluationResult(**result) for result in data["results"]]
 

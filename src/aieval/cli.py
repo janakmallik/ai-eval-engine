@@ -29,6 +29,11 @@ def read_report(reporter: JsonReporter, path: str) -> EvaluationRun | None:
             f"Error: Could not read report file '{path}': {exc}",
             file=sys.stderr,
         )
+    except (KeyError, TypeError, ValueError) as exc:
+        print(
+            f"Error: Invalid report structure in '{path}': {exc}",
+            file=sys.stderr,
+        )
 
     return None
 

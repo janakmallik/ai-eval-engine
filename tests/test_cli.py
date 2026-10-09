@@ -974,3 +974,31 @@ def test_cli_trace_handles_invalid_json(tmp_path, capsys):
     assert "Error:" in captured.err
     assert "Invalid JSON" in captured.err
     assert "Traceback" not in captured.err
+
+
+def test_cli_trace_reads_utf8_bom_report(tmp_path, capsys):
+    report_path = tmp_path / "bom-report.json"
+    report_path.write_text(
+        JsonReporter().render(EvaluationRun(results=[])),
+        encoding="utf-8-sig",
+    )
+
+    exit_code = main(["trace", "--input", str(report_path)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 0
+    assert "No trace data available." in captured.out
+    assert "Traceback" not in captured.err
+
+
+def test_cli_trace_handles_invalid_report_structure(tmp_path, capsys):
+    report_path = tmp_path / "invalid-structure.json"
+    report_path.write_text("{}", encoding="utf-8")
+
+    exit_code = main(["trace", "--input", str(report_path)])
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error:" in captured.err
+    assert "invalid-structure.json" in captured.err
+    assert "Traceback" not in captured.err
