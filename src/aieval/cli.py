@@ -1,4 +1,6 @@
 import argparse
+import json
+import sys
 
 from aieval.comparison import ComparisonResult, compare_runs
 from aieval.gate import GateResult, RegressionGate
@@ -9,6 +11,26 @@ from aieval.regression import (
 )
 from aieval.reporting.json import JsonReporter
 from aieval.run import EvaluationRun
+
+
+def read_report(reporter: JsonReporter, path: str) -> EvaluationRun | None:
+    try:
+        return reporter.read(path)
+    except FileNotFoundError:
+        print(f"Error: Report file not found: {path}", file=sys.stderr)
+    except json.JSONDecodeError as exc:
+        print(
+            f"Error: Invalid JSON in report file '{path}': "
+            f"{exc.msg} (line {exc.lineno}, column {exc.colno})",
+            file=sys.stderr,
+        )
+    except OSError as exc:
+        print(
+            f"Error: Could not read report file '{path}': {exc}",
+            file=sys.stderr,
+        )
+
+    return None
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -108,8 +130,13 @@ def main(args: list[str] | None = None) -> int:
     if parsed_args.command == "regression":
         reporter = JsonReporter()
 
-        baseline = reporter.read(parsed_args.baseline)
-        current = reporter.read(parsed_args.current)
+        baseline = read_report(reporter, parsed_args.baseline)
+        if baseline is None:
+            return 1
+
+        current = read_report(reporter, parsed_args.current)
+        if current is None:
+            return 1
 
         comparison = compare_runs(baseline, current)
 
@@ -143,7 +170,9 @@ def main(args: list[str] | None = None) -> int:
 
     if parsed_args.command == "trace":
         reporter = JsonReporter()
-        run = reporter.read(parsed_args.input)
+        run = read_report(reporter, parsed_args.input)
+        if run is None:
+            return 1
 
         if run.trace is None:
             print("No trace data available.")

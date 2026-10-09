@@ -898,3 +898,79 @@ def test_cli_regression_uses_trace_error_rate_from_json_reports(
     assert "baseline error rate: 0.333" in captured.out
     assert "current error rate:  0.500" in captured.out
     assert "error-rate delta:    +0.167" in captured.out
+
+
+def test_cli_regression_handles_missing_report(tmp_path, capsys):
+    missing = tmp_path / "missing.json"
+    valid = tmp_path / "valid.json"
+
+    JsonReporter().write(EvaluationRun(results=[]), valid)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(missing),
+            "--current",
+            str(valid),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error:" in captured.err
+    assert "missing.json" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_regression_handles_invalid_json(tmp_path, capsys):
+    invalid = tmp_path / "invalid.json"
+    valid = tmp_path / "valid.json"
+
+    invalid.write_text("{ invalid json", encoding="utf-8")
+    JsonReporter().write(EvaluationRun(results=[]), valid)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(invalid),
+            "--current",
+            str(valid),
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error:" in captured.err
+    assert "Invalid JSON" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_trace_handles_missing_report(tmp_path, capsys):
+    missing = tmp_path / "missing.json"
+
+    exit_code = main(["trace", "--input", str(missing)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error:" in captured.err
+    assert "missing.json" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_trace_handles_invalid_json(tmp_path, capsys):
+    invalid = tmp_path / "invalid.json"
+    invalid.write_text("{ invalid json", encoding="utf-8")
+
+    exit_code = main(["trace", "--input", str(invalid)])
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 1
+    assert "Error:" in captured.err
+    assert "Invalid JSON" in captured.err
+    assert "Traceback" not in captured.err
