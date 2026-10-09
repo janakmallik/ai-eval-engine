@@ -29,28 +29,31 @@ class RAGPipeline:
         self.top_k = top_k
 
     def run(self, question: str) -> RAGResult:
-        trace = Trace()
+        with Trace() as trace:
+            with trace.start_retrieval(
+                query=question,
+                top_k=self.top_k,
+            ) as retrieval_span:
+                documents = self.retriever(question, self.top_k)
 
-        retrieval_span = trace.start_retrieval(
-            query=question,
-            top_k=self.top_k,
-        )
+                retrieval_span.set_attribute(
+                    "retrieval.result_count",
+                    len(documents),
+                )
 
-        documents = self.retriever(question, self.top_k)
+            if self.reranker is not None:
+                documents = self.reranker(question, documents)
 
-        retrieval_span.set_attribute(
-            "retrieval.result_count",
-            len(documents),
-        )
+            with trace.start_span("generation") as generation_span:
+                answer = self.generator(question, documents)
+                generation_span.set_attribute(
+                    "generation.answer_length",
+                    len(answer),
+                )
 
-        if self.reranker is not None:
-            documents = self.reranker(question, documents)
-
-        answer = self.generator(question, documents)
-
-        return RAGResult(
-            question=question,
-            answer=answer,
-            documents=documents,
-            trace=trace,
-        )
+            return RAGResult(
+                question=question,
+                answer=answer,
+                documents=documents,
+                trace=trace,
+            )

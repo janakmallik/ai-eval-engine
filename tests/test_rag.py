@@ -175,3 +175,60 @@ def test_rag_pipeline_records_trace():
     result = pipeline.run("What is the capital of France?")
 
     assert result.trace is not None
+    assert result.trace.ended_at is not None
+
+    assert {span.name for span in result.trace.spans} == {
+        "retrieval",
+        "generation",
+    }
+
+    retrieval_span = next(
+        span for span in result.trace.spans if span.name == "retrieval"
+    )
+
+    assert retrieval_span.ended_at is not None
+    assert retrieval_span.duration is not None
+    assert retrieval_span.status == "ok"
+
+
+def test_rag_pipeline_records_generation_span():
+    def retriever(query: str, top_k: int) -> list[str]:
+        return ["Paris is the capital of France."]
+
+    def generator(question: str, documents: list[str]) -> str:
+        return "Paris"
+
+    pipeline = RAGPipeline(
+        retriever=retriever,
+        generator=generator,
+    )
+
+    result = pipeline.run("What is the capital of France?")
+
+    span_names = [span.name for span in result.trace.spans]
+
+    assert "retrieval" in span_names
+    assert "generation" in span_names
+
+    generation_span = next(
+        span for span in result.trace.spans if span.name == "generation"
+    )
+
+    assert generation_span.ended_at is not None
+    assert generation_span.status == "ok"
+
+
+def test_rag_pipeline_propagates_generator_exception():
+    def retriever(query: str, top_k: int) -> list[str]:
+        return ["Paris is the capital of France."]
+
+    def generator(question: str, documents: list[str]) -> str:
+        raise RuntimeError("generation failed")
+
+    pipeline = RAGPipeline(
+        retriever=retriever,
+        generator=generator,
+    )
+
+    with pytest.raises(RuntimeError, match="generation failed"):
+        pipeline.run("What is the capital of France?")
