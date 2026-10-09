@@ -67,7 +67,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--threshold",
         type=float,
         default=0.0,
-        help="Maximum allowed regression.",
+        help="Maximum allowed overall score decrease before failing the regression gate.",
     )
 
     regression_parser.add_argument(
@@ -95,7 +95,9 @@ def build_parser() -> argparse.ArgumentParser:
         "--evaluator-threshold",
         action="append",
         default=[],
-        help="Evaluator-specific threshold in the form NAME=VALUE.",
+        metavar="NAME=VALUE",
+        help="Maximum allowed score decrease for a specific evaluator. "
+        "Can be specified multiple times.",
     )
 
     trace_parser = subparsers.add_parser(
@@ -112,14 +114,32 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
-def parse_evaluator_thresholds(
-    values: list[str],
-) -> dict[str, float]:
+def parse_evaluator_thresholds(values: list[str]) -> dict[str, float]:
     thresholds: dict[str, float] = {}
 
     for value in values:
-        name, threshold = value.split("=", 1)
-        thresholds[name] = float(threshold)
+        name, separator, threshold = value.partition("=")
+
+        if not separator or not name.strip() or not threshold.strip():
+            raise ValueError(
+                f"Invalid evaluator threshold '{value}'. "
+                "Expected NAME=VALUE, for example exact_match=0.05."
+            )
+
+        try:
+            numeric_threshold = float(threshold)
+        except ValueError as exc:
+            raise ValueError(
+                f"Invalid threshold value '{threshold}' for evaluator '{name}'. "
+                "Expected a number."
+            ) from exc
+
+        # if not 0.0 <= numeric_threshold <= 1.0:
+        #     raise ValueError(
+        #         f"Threshold for evaluator '{name}' must be between 0 and 1."
+        #     )
+
+        thresholds[name.strip()] = numeric_threshold
 
     return thresholds
 
@@ -145,11 +165,17 @@ def main(args: list[str] | None = None) -> int:
 
         comparison = compare_runs(baseline, current)
 
+        try:
+            evaluator_thresholds = parse_evaluator_thresholds(
+                parsed_args.evaluator_threshold
+            )
+        except ValueError as exc:
+            print(f"Error: {exc}", file=sys.stderr)
+            return 2
+
         config = RegressionConfig(
             threshold=parsed_args.threshold,
-            evaluator_thresholds=parse_evaluator_thresholds(
-                parsed_args.evaluator_threshold
-            ),
+            evaluator_thresholds=evaluator_thresholds,
             latency_threshold=parsed_args.latency_threshold,
             cost_threshold=parsed_args.cost_threshold,
             error_rate_threshold=parsed_args.error_rate_threshold,

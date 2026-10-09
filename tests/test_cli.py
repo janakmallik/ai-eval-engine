@@ -1,4 +1,6 @@
-from aieval.cli import format_regression_report, main
+import pytest
+
+from aieval.cli import format_regression_report, main, parse_evaluator_thresholds
 from aieval.comparison import ComparisonResult
 from aieval.dataset import EvalCase
 from aieval.evaluators.exact_match import ExactMatchEvaluator
@@ -227,6 +229,27 @@ def test_parse_evaluator_thresholds():
         "exact_match": 0.01,
         "similarity": 0.10,
     }
+
+
+def test_parse_evaluator_thresholds_accepts_values_above_one():
+    from aieval.cli import parse_evaluator_thresholds
+
+    result = parse_evaluator_thresholds(["exact_match=1.5"])
+
+    assert result == {"exact_match": 1.5}
+
+
+@pytest.mark.parametrize(
+    "value",
+    [
+        "exact_match",
+        "=0.05",
+        "exact_match=",
+    ],
+)
+def test_parse_evaluator_thresholds_rejects_malformed_values(value):
+    with pytest.raises(ValueError, match="Expected NAME=VALUE"):
+        parse_evaluator_thresholds([value])
 
 
 def test_cli_regression_works_with_real_json_reports(tmp_path):
@@ -1001,4 +1024,35 @@ def test_cli_trace_handles_invalid_report_structure(tmp_path, capsys):
     assert exit_code == 1
     assert "Error:" in captured.err
     assert "invalid-structure.json" in captured.err
+    assert "Traceback" not in captured.err
+
+
+def test_cli_regression_handles_invalid_evaluator_threshold(
+    tmp_path,
+    capsys,
+):
+    baseline = tmp_path / "baseline.json"
+    current = tmp_path / "current.json"
+
+    reporter = JsonReporter()
+    reporter.write(EvaluationRun(results=[]), baseline)
+    reporter.write(EvaluationRun(results=[]), current)
+
+    exit_code = main(
+        [
+            "regression",
+            "--baseline",
+            str(baseline),
+            "--current",
+            str(current),
+            "--evaluator-threshold",
+            "exact_match=abc",
+        ]
+    )
+
+    captured = capsys.readouterr()
+
+    assert exit_code == 2
+    assert "Error:" in captured.err
+    assert "exact_match" in captured.err
     assert "Traceback" not in captured.err
