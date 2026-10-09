@@ -57,3 +57,21 @@ def test_public_api_exposes_evaluate_with_config():
 
 def test_performance_metrics_is_public():
     assert PerformanceMetrics is not None
+
+
+def test_answer_relevance_evaluator_is_exported_from_aieval():
+    from aieval import AnswerRelevanceEvaluator
+
+    assert AnswerRelevanceEvaluator.__name__ == "AnswerRelevanceEvaluator"
+
+
+def test_context_relevance_evaluator_is_exported_from_aieval():
+    from aieval import ContextRelevanceEvaluator
+
+    assert ContextRelevanceEvaluator.__name__ == "ContextRelevanceEvaluator"
+
+
+def test_faithfulness_evaluator_is_exported_from_aieval():
+    from aieval import FaithfulnessEvaluator
+
+    assert FaithfulnessEvaluator.__name__ == "FaithfulnessEvaluator"

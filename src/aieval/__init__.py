@@ -2,8 +2,11 @@ from aieval.comparison import ComparisonResult, compare_experiments, compare_run
 from aieval.config import EvaluationConfig
 from aieval.context import EvaluationContext
 from aieval.dataset import EvalCase, EvalDataset
+from aieval.evaluators.answer_relevance import AnswerRelevanceEvaluator
 from aieval.evaluators.contains import ContainsEvaluator
+from aieval.evaluators.context_relevance import ContextRelevanceEvaluator
 from aieval.evaluators.exact_match import ExactMatchEvaluator
+from aieval.evaluators.faithfulness import FaithfulnessEvaluator
 from aieval.evaluators.length import LengthEvaluator
 from aieval.evaluators.similarity import SimilarityEvaluator
 from aieval.experiment import Experiment
@@ -49,4 +52,7 @@ __all__ = [
     "evaluate_dataset",
     "evaluate_with_config",
     "PerformanceMetrics",
+    "AnswerRelevanceEvaluator",
+    "ContextRelevanceEvaluator",
+    "FaithfulnessEvaluator",
 ]

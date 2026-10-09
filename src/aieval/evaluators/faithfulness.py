@@ -1,6 +1,6 @@
 import re
 
-from aieval import EvaluationResult
+from aieval.result import EvaluationResult
 
 
 class FaithfulnessEvaluator:
